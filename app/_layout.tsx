@@ -15,7 +15,16 @@ export default function RootLayout() {
       <Stack.Screen name="biometric-setup" options={{ headerShown: false }} />
       <Stack.Screen name="home" options={{ headerShown: false }} />
       <Stack.Screen name="quick-login" options={{ headerShown: false }} />
-      <Stack.Screen name="security-code-setup" options={{ headerShown: false }} />
+      <Stack.Screen name="password-setup" options={{ headerShown: false }} />
+      <Stack.Screen 
+        name="search" 
+        options={{ 
+          headerShown: false,
+          animation: 'none',
+          presentation: 'transparentModal'
+        }} 
+      />
+      <Stack.Screen name="notifications" options={{ headerShown: false }} />
     </Stack>
   );
 }

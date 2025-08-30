@@ -14,6 +14,7 @@ import {
   View,
 } from "react-native";
 import { API_ENDPOINTS } from '../config/api';
+import { sessionService } from '../lib/sessionService';
 
 export default function VerifyScreen() {
   const { email } = useLocalSearchParams<{ email: string }>();
@@ -94,11 +95,36 @@ export default function VerifyScreen() {
       const result = await response.json();
       console.log('Email verified successfully:', result);
       
-      // Code verification successful, navigate to biometric setup
-      router.push({
-        pathname: "/biometric-setup",
-        params: { email: email }
-      });
+      // Check if user already has authentication set up
+      if (result.user.hasPasskey || result.user.hasPassword) {
+        // User already exists with authentication, log them in directly
+        try {
+          // Create session for existing user
+          await sessionService.createSession({
+            userId: result.user.id,
+            email: email,
+            token: result.token,
+            hasPasskey: result.user.hasPasskey,
+            hasPassword: result.user.hasPassword,
+          });
+          
+          // Navigate directly to home
+          router.replace("/home");
+        } catch (sessionError) {
+          console.error('Error creating session:', sessionError);
+          // Fallback to biometric setup if session creation fails
+          router.push({
+            pathname: "/biometric-setup",
+            params: { email: email }
+          });
+        }
+      } else {
+        // New user, navigate to biometric setup
+        router.push({
+          pathname: "/biometric-setup",
+          params: { email: email }
+        });
+      }
     } catch (error: any) {
       console.error('Error verifying code:', error);
       Alert.alert("Error", error.message || "Verification failed. Please try again.");

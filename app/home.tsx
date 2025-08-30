@@ -3,14 +3,21 @@ import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
 import {
-    Alert,
-    SafeAreaView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import { sessionService } from '../lib/sessionService';
+import AIChat from './components/AIChat';
+import MenuDrawer from './components/MenuDrawer';
+import Profile from './components/Profile';
+import Transactions from './components/Transactions';
+import Wallet from './components/Wallet';
 
 interface TabItem {
   id: string;
@@ -20,15 +27,18 @@ interface TabItem {
 }
 
 const tabs: TabItem[] = [
-  { id: 'home', title: 'Home', icon: 'home-outline', activeIcon: 'home' },
   { id: 'wallet', title: 'Wallet', icon: 'wallet-outline', activeIcon: 'wallet' },
+  { id: 'ai', title: 'AI', icon: 'chatbubble-outline', activeIcon: 'chatbubble' },
   { id: 'transactions', title: 'Transactions', icon: 'receipt-outline', activeIcon: 'list' },
   { id: 'profile', title: 'Profile', icon: 'person-outline', activeIcon: 'person' },
 ];
 
 export default function HomeScreen() {
-  const [activeTab, setActiveTab] = useState('home');
+  const [activeTab, setActiveTab] = useState('wallet');
   const [session, setSession] = useState<any>(null);
+  const [selectedAccount, setSelectedAccount] = useState('Account 316');
+  const [isDrawerVisible, setIsDrawerVisible] = useState(false);
+
 
   useEffect(() => {
     // Check if user is logged in
@@ -36,89 +46,45 @@ export default function HomeScreen() {
       router.replace('/');
       return;
     }
-    
+
     const session = sessionService.getSession();
     setSession(session);
   }, []);
 
-  const handleLogout = async () => {
-    Alert.alert(
-      "Logout",
-      "Are you sure you want to logout?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Logout",
-          style: "destructive",
-          onPress: async () => {
-            await sessionService.clearSession();
-            router.replace('/');
-          },
-        },
-      ]
-    );
+  const handleLogout = () => {
+    router.replace('/');
   };
 
   const handleMenuPress = () => {
-    // TODO: Implement menu functionality
-    Alert.alert("Menu", "Menu options will be implemented here");
+    setIsDrawerVisible(true);
   };
 
   const handleNotificationPress = () => {
-    // TODO: Implement notification functionality
-    Alert.alert("Notifications", "Notifications will be implemented here");
+    router.push('/notifications');
+  };
+
+  const handleCopyAddress = () => {
+    Alert.alert('Copied', 'Wallet address copied to clipboard');
+  };
+
+  const handleExpand = () => {
+    Alert.alert('Expand', 'Full wallet view will be implemented here');
+  };
+
+  const handleSearchPress = () => {
+    router.push('/search');
   };
 
   const renderTabContent = () => {
     switch (activeTab) {
-      case 'home':
-        return (
-          <View style={styles.tabContent}>
-            <Text style={styles.welcomeText}>Welcome back!</Text>
-            <Text style={styles.emailText}>{session?.email}</Text>
-            <View style={styles.statsContainer}>
-              <View style={styles.statCard}>
-                <Text style={styles.statValue}>$0.00</Text>
-                <Text style={styles.statLabel}>Total Balance</Text>
-              </View>
-              <View style={styles.statCard}>
-                <Text style={styles.statValue}>0</Text>
-                <Text style={styles.statLabel}>Assets</Text>
-              </View>
-            </View>
-          </View>
-        );
+      case 'ai':
+        return <AIChat />;
       case 'wallet':
-        return (
-          <View style={styles.tabContent}>
-            <Text style={styles.tabTitle}>Wallet</Text>
-            <Text style={styles.comingSoon}>Wallet features coming soon...</Text>
-          </View>
-        );
+        return <Wallet />;
       case 'transactions':
-        return (
-          <View style={styles.tabContent}>
-            <Text style={styles.tabTitle}>Transactions</Text>
-            <Text style={styles.comingSoon}>Transaction history coming soon...</Text>
-          </View>
-        );
+        return <Transactions />;
       case 'profile':
-        return (
-          <View style={styles.tabContent}>
-            <Text style={styles.tabTitle}>Profile</Text>
-            <View style={styles.profileInfo}>
-              <Text style={styles.profileLabel}>Email:</Text>
-              <Text style={styles.profileValue}>{session?.email}</Text>
-              <Text style={styles.profileLabel}>Last Activity:</Text>
-              <Text style={styles.profileValue}>
-                {session?.lastActivity ? new Date(session.lastActivity).toLocaleString() : 'N/A'}
-              </Text>
-            </View>
-            <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-              <Text style={styles.logoutButtonText}>Logout</Text>
-            </TouchableOpacity>
-          </View>
-        );
+        return <Profile session={session} onLogout={handleLogout} />;
       default:
         return null;
     }
@@ -130,26 +96,35 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar style="light" backgroundColor="#000000" />
-      
+      <StatusBar style="dark" backgroundColor="#ffffff" />
+
       {/* Top Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.headerButton} onPress={handleMenuPress}>
-          <Ionicons name="menu" size={24} color="#fff" />
+          <Ionicons name="menu" size={24} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Goji</Text>
+
+        <TouchableOpacity style={styles.searchButton} onPress={handleSearchPress}>
+          <Ionicons name="search" size={20} color="#666" />
+          <Text style={styles.searchPlaceholder}>Search...</Text>
+        </TouchableOpacity>
+
         <TouchableOpacity style={styles.headerButton} onPress={handleNotificationPress}>
-          <Ionicons name="notifications-outline" size={24} color="#fff" />
+          <Ionicons name="notifications-outline" size={24} color="#000" />
         </TouchableOpacity>
       </View>
 
       {/* Main Content Container */}
-      <View style={styles.container}>
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      >
         {/* Tab Content */}
         <View style={styles.content}>
           {renderTabContent()}
         </View>
-      </View>
+      </KeyboardAvoidingView>
 
       {/* Bottom Tabs */}
       <View style={styles.bottomTabs}>
@@ -162,7 +137,7 @@ export default function HomeScreen() {
             <Ionicons
               name={activeTab === tab.id ? tab.activeIcon : tab.icon}
               size={24}
-              color={activeTab === tab.id ? '#fff' : '#999'}
+              color={activeTab === tab.id ? '#000' : '#999'}
             />
             <Text
               style={[
@@ -175,6 +150,12 @@ export default function HomeScreen() {
           </TouchableOpacity>
         ))}
       </View>
+
+      {/* Menu Drawer */}
+      <MenuDrawer
+        visible={isDrawerVisible}
+        onClose={() => setIsDrawerVisible(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -182,25 +163,19 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#fff',
   },
   safeArea: {
     flex: 1,
-    backgroundColor: '#000000',
+    backgroundColor: '#ffffff',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 16,
-    backgroundColor: '#000000',
-    borderBottomWidth: 1,
-    borderBottomColor: '#333',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
+    paddingVertical: 12,
+    backgroundColor: '#ffffff',
     elevation: 5,
   },
   headerButton: {
@@ -209,106 +184,18 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#fff',
+    color: '#000',
   },
   content: {
     flex: 1,
-    padding: 16,
-  },
-  tabContent: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  welcomeText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 8,
-  },
-  emailText: {
-    fontSize: 16,
-    color: '#666',
-    marginBottom: 32,
-  },
-  statsContainer: {
-    flexDirection: 'row',
-    gap: 16,
-  },
-  statCard: {
     backgroundColor: '#fff',
-    padding: 20,
-    borderRadius: 12,
-    alignItems: 'center',
-    minWidth: 120,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
-  statValue: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#000000',
-    marginBottom: 4,
-  },
-  statLabel: {
-    fontSize: 14,
-    color: '#666',
-  },
-  tabTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 16,
-  },
-  comingSoon: {
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
-  },
-  profileInfo: {
-    backgroundColor: '#fff',
-    padding: 20,
-    borderRadius: 12,
-    marginBottom: 20,
-    width: '100%',
-  },
-  profileLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 4,
-  },
-  profileValue: {
-    fontSize: 16,
-    color: '#666',
-    marginBottom: 16,
-  },
-  logoutButton: {
-    backgroundColor: '#000000',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  logoutButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
+
   bottomTabs: {
     flexDirection: 'row',
-    backgroundColor: '#000000',
-    borderTopWidth: 1,
-    borderTopColor: '#333',
-    paddingBottom: 20,
+    backgroundColor: '#fff',
+    paddingBottom: 0,
     paddingTop: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
     elevation: 5,
   },
   tab: {
@@ -319,11 +206,55 @@ const styles = StyleSheet.create({
   },
   tabText: {
     fontSize: 12,
-    color: '#999',
+    color: '#000',
     marginTop: 4,
   },
   activeTabText: {
-    color: '#fff',
+    color: '#000',
     fontWeight: '600',
+  },
+  walletHeader: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  accountSelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  accountInfo: {
+    alignItems: 'center',
+    marginHorizontal: 8,
+  },
+  accountName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1a1a1a',
+    marginBottom: 2,
+  },
+  walletAddress: {
+    fontSize: 12,
+    color: '#666',
+  },
+  headerActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  actionButton: {
+    padding: 4,
+  },
+  searchButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginHorizontal: 16,
+  },
+  searchPlaceholder: {
+    marginLeft: 8,
+    color: '#999',
+    fontSize: 14,
   },
 });

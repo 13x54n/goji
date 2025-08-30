@@ -3,13 +3,13 @@ import { router, useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useRef, useState } from "react";
 import {
-  Alert,
-  Animated,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
+    Alert,
+    Animated,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from "react-native";
 import { API_ENDPOINTS } from '../config/api';
 import { sessionService } from '../lib/sessionService';
@@ -17,12 +17,12 @@ import { sessionService } from '../lib/sessionService';
 const DOT_SIZE = 20;
 const DOT_SPACING = 16;
 
-export default function SecurityCodeSetup() {
+export default function PasswordSetup() {
   const { email, mode } = useLocalSearchParams<{ email: string; mode?: string }>();
   const isLoginMode = mode === 'login';
-  const [securityCode, setSecurityCode] = useState(["", "", "", "", "", ""]);
-  const [showCode, setShowCode] = useState(false);
-  const [confirmCode, setConfirmCode] = useState(["", "", "", "", "", ""]);
+  const [password, setPassword] = useState(["", "", "", "", "", ""]);
+  const [showPassword, setShowPassword] = useState(false);
+  const [confirmPassword, setConfirmPassword] = useState(["", "", "", "", "", ""]);
   const [currentStep, setCurrentStep] = useState<'input' | 'confirm'>(isLoginMode ? 'input' : 'input');
   const [isLoading, setIsLoading] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState(0);
@@ -48,10 +48,10 @@ export default function SecurityCodeSetup() {
     }, 600);
   }, []);
 
-  const handleCodeChange = (text: string, index: number) => {
-    const newCode = [...securityCode];
-    newCode[index] = text;
-    setSecurityCode(newCode);
+  const handlePasswordChange = (text: string, index: number) => {
+    const newPassword = [...password];
+    newPassword[index] = text;
+    setPassword(newPassword);
 
     // Auto-focus next input
     if (text && index < 5) {
@@ -59,10 +59,10 @@ export default function SecurityCodeSetup() {
     }
   };
 
-  const handleConfirmCodeChange = (text: string, index: number) => {
-    const newCode = [...confirmCode];
-    newCode[index] = text;
-    setConfirmCode(newCode);
+  const handleConfirmPasswordChange = (text: string, index: number) => {
+    const newPassword = [...confirmPassword];
+    newPassword[index] = text;
+    setConfirmPassword(newPassword);
 
     // Auto-focus next input
     if (text && index < 5) {
@@ -72,58 +72,58 @@ export default function SecurityCodeSetup() {
 
   const handleBackspace = (index: number) => {
     if (currentStep === 'input') {
-      const newCode = [...securityCode];
-      if (newCode[index] === "") {
+      const newPassword = [...password];
+      if (newPassword[index] === "") {
         // Move to previous input and clear it
         if (index > 0) {
-          newCode[index - 1] = "";
-          setSecurityCode(newCode);
+          newPassword[index - 1] = "";
+          setPassword(newPassword);
           inputRefs.current[index - 1]?.focus();
         }
       } else {
         // Clear current input
-        newCode[index] = "";
-        setSecurityCode(newCode);
+        newPassword[index] = "";
+        setPassword(newPassword);
       }
     } else {
-      const newCode = [...confirmCode];
-      if (newCode[index] === "") {
+      const newPassword = [...confirmPassword];
+      if (newPassword[index] === "") {
         // Move to previous input and clear it
         if (index > 0) {
-          newCode[index - 1] = "";
-          setConfirmCode(newCode);
+          newPassword[index - 1] = "";
+          setConfirmPassword(newPassword);
           inputRefs.current[index - 1]?.focus();
         }
       } else {
         // Clear current input
-        newCode[index] = "";
-        setConfirmCode(newCode);
+        newPassword[index] = "";
+        setConfirmPassword(newPassword);
       }
     }
   };
 
   const handleContinue = () => {
-    const code = securityCode.join('');
-    if (code.length !== 6) {
-      Alert.alert("Error", "Please enter a 6-digit security code");
+    const passwordStr = password.join('');
+    if (passwordStr.length !== 6) {
+      Alert.alert("Error", "Please enter a 6-digit password");
       return;
     }
     
     setCurrentStep('confirm');
     // Reset confirm inputs
-    setConfirmCode(["", "", "", "", "", ""]);
+    setConfirmPassword(["", "", "", "", "", ""]);
     // Focus first confirm input
     setTimeout(() => inputRefs.current[0]?.focus(), 100);
   };
 
   const handleConfirm = async () => {
-    const inputCode = securityCode.join('');
-    const confirmCodeStr = confirmCode.join('');
+    const inputPassword = password.join('');
+    const confirmPasswordStr = confirmPassword.join('');
     
     if (isLoginMode) {
-      // Login mode - just verify the code
-      if (inputCode.length !== 6) {
-        Alert.alert("Error", "Please enter your 6-digit security code");
+      // Login mode - just verify the password
+      if (inputPassword.length !== 6) {
+        Alert.alert("Error", "Please enter your 6-digit password");
         return;
       }
       
@@ -135,7 +135,7 @@ export default function SecurityCodeSetup() {
       setIsLoading(true);
       
       try {
-        // Login with security code
+        // Login with password
         const response = await fetch(API_ENDPOINTS.AUTH.LOGIN, {
           method: 'POST',
           headers: {
@@ -143,7 +143,7 @@ export default function SecurityCodeSetup() {
           },
           body: JSON.stringify({ 
             email: email.trim(),
-            securityCode: inputCode 
+            password: inputPassword 
           }),
         });
 
@@ -161,7 +161,7 @@ export default function SecurityCodeSetup() {
           email: email.trim(),
           token: result.token,
           hasPasskey: result.user.hasPasskey,
-          hasSecurityCode: result.user.hasSecurityCode,
+          hasPassword: result.user.hasPassword,
         });
 
         // Navigate to home page
@@ -175,36 +175,36 @@ export default function SecurityCodeSetup() {
       return;
     }
     
-    // Setup mode - confirm the code
-    if (confirmCodeStr.length !== 6) {
-      Alert.alert("Error", "Please confirm your 6-digit security code");
+    // Setup mode - confirm the password
+    if (confirmPasswordStr.length !== 6) {
+      Alert.alert("Error", "Please confirm your 6-digit password");
       return;
     }
     
-    if (inputCode !== confirmCodeStr) {
-      Alert.alert("Error", "Security codes don't match. Please try again.");
-      setConfirmCode(["", "", "", "", "", ""]);
+    if (inputPassword !== confirmPasswordStr) {
+      Alert.alert("Error", "Passwords don't match. Please try again.");
+      setConfirmPassword(["", "", "", "", "", ""]);
       setTimeout(() => inputRefs.current[0]?.focus(), 100);
       return;
     }
     
     if (!email) {
-      Alert.alert("Error", "Email is required to set security code");
+      Alert.alert("Error", "Email is required to set password");
       return;
     }
     
     setIsLoading(true);
     
     try {
-      // Send security code to backend
-      const response = await fetch(API_ENDPOINTS.AUTH.SECURITY_CODE, {
+      // Send password to backend
+      const response = await fetch(API_ENDPOINTS.AUTH.PASSWORD, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
           email: email.trim(),
-          securityCode: inputCode 
+          password: inputPassword 
         }),
       });
 
@@ -214,22 +214,22 @@ export default function SecurityCodeSetup() {
       }
 
       const result = await response.json();
-      console.log('Security code set successfully:', result);
+      console.log('Password set successfully:', result);
 
-      // Create session after successful security code setup
+      // Create session after successful password setup
       await sessionService.createSession({
         userId: result.user.id,
         email: email.trim(),
         token: result.token,
         hasPasskey: false,
-        hasSecurityCode: true,
+        hasPassword: true,
       });
 
       // Navigate to home page
       router.push("/home");
     } catch (error: any) {
       console.error('Error setting security code:', error);
-      Alert.alert("Error", error.message || "Failed to set security code. Please try again.");
+      Alert.alert("Error", error.message || "Failed to set password. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -254,7 +254,7 @@ export default function SecurityCodeSetup() {
             isFilled ? styles.dotFilled : styles.dotEmpty,
             isFocused && styles.dotFocused
           ]}>
-            {showCode && value ? (
+            {showPassword && value ? (
               <Text style={styles.dotText}>{value}</Text>
             ) : null}
           </View>
@@ -267,9 +267,9 @@ export default function SecurityCodeSetup() {
           value={value}
           onChangeText={(text) => {
             if (isConfirm) {
-              handleConfirmCodeChange(text, index);
+              handleConfirmPasswordChange(text, index);
             } else {
-              handleCodeChange(text, index);
+              handlePasswordChange(text, index);
             }
           }}
           onFocus={() => setFocusedIndex(index)}
@@ -290,17 +290,17 @@ export default function SecurityCodeSetup() {
   };
 
   const renderDots = () => {
-    const code = currentStep === 'input' ? securityCode : confirmCode;
+    const passwordArray = currentStep === 'input' ? password : confirmPassword;
     return (
       <View style={styles.dotsContainer}>
-        {code.map((digit, index) => renderDot(digit, index, currentStep === 'confirm'))}
+        {passwordArray.map((digit, index) => renderDot(digit, index, currentStep === 'confirm'))}
       </View>
     );
   };
 
-  const isCodeComplete = () => {
-    const code = currentStep === 'input' ? securityCode : confirmCode;
-    return code.every(digit => digit !== "");
+  const isPasswordComplete = () => {
+    const passwordArray = currentStep === 'input' ? password : confirmPassword;
+    return passwordArray.every(digit => digit !== "");
   };
 
   return (
@@ -314,7 +314,7 @@ export default function SecurityCodeSetup() {
             onPress={() => {
               if (currentStep === 'confirm') {
                 setCurrentStep('input');
-                setConfirmCode(["", "", "", "", "", ""]);
+                setConfirmPassword(["", "", "", "", "", ""]);
               } else {
                 router.back();
               }
@@ -325,8 +325,8 @@ export default function SecurityCodeSetup() {
           
           <Text style={styles.title}>
             {isLoginMode 
-              ? 'Enter Security Code' 
-              : (currentStep === 'input' ? 'Set Security Code' : 'Confirm Security Code')
+              ? 'Enter Password' 
+              : (currentStep === 'input' ? 'Set Password' : 'Confirm Password')
             }
           </Text>
           
@@ -336,10 +336,10 @@ export default function SecurityCodeSetup() {
         <View style={styles.descriptionContainer}>
           <Text style={styles.description}>
             {isLoginMode
-              ? 'Enter your 6-digit security code to sign in'
+              ? 'Enter your 6-digit password to sign in'
               : (currentStep === 'input' 
-                ? 'Create a 6-digit security code'
-                : 'Please confirm your security code'
+                ? 'Create a 6-digit password'
+                : 'Please confirm your password'
               )
             }
           </Text>
@@ -359,15 +359,15 @@ export default function SecurityCodeSetup() {
           <View style={styles.visibilityContainer}>
             <TouchableOpacity
               style={styles.eyeButton}
-              onPress={() => setShowCode(!showCode)}
+              onPress={() => setShowPassword(!showPassword)}
             >
               <Ionicons 
-                name={showCode ? "eye-off" : "eye"} 
+                name={showPassword ? "eye-off" : "eye"} 
                 size={24} 
                 color="#666" 
               />
               <Text style={styles.eyeButtonText}>
-                {showCode ? 'Hide' : 'Show'} Code
+                {showPassword ? 'Hide' : 'Show'} Password
               </Text>
             </TouchableOpacity>
           </View>
@@ -377,10 +377,10 @@ export default function SecurityCodeSetup() {
           <TouchableOpacity
             style={[
               styles.continueButton,
-              !isCodeComplete() && styles.continueButtonDisabled
+              !isPasswordComplete() && styles.continueButtonDisabled
             ]}
             onPress={isLoginMode ? handleConfirm : (currentStep === 'input' ? handleContinue : handleConfirm)}
-            disabled={!isCodeComplete() || isLoading}
+            disabled={!isPasswordComplete() || isLoading}
             activeOpacity={0.8}
           >
             <Text style={styles.continueButtonText}>
@@ -395,10 +395,10 @@ export default function SecurityCodeSetup() {
         <View style={styles.footer}>
           <Text style={styles.footerText}>
             {isLoginMode
-              ? 'Enter your 6-digit security code to access your account'
+              ? 'Enter your 6-digit password to access your account'
               : (currentStep === 'input' 
-                ? 'This code will be used for quick login when passkey is not available'
-                : 'Make sure both codes match exactly'
+                ? 'This password will be used for quick login when passkey is not available'
+                : 'Make sure both passwords match exactly'
               )
             }
           </Text>

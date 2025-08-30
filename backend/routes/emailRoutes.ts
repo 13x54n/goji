@@ -1,4 +1,5 @@
 import express from 'express';
+import jwt from 'jsonwebtoken';
 import User from '../models/User';
 import VerificationCode from '../models/VerificationCode';
 import { generateVerificationCode, sendVerificationEmail } from '../services/emailService';
@@ -104,15 +105,26 @@ router.post('/verify-code', async (req, res) => {
 
     await user.save();
 
+    // Generate JWT token for existing users
+    let token = null;
+    if (user.hasPasskey || user.hasPassword) {
+      token = jwt.sign(
+        { userId: user._id, email: user.email },
+        process.env.JWT_SECRET || 'your-secret-key',
+        { expiresIn: '7d' }
+      );
+    }
+
     res.json({
       success: true,
       message: 'Email verified successfully',
+      token,
       user: {
         id: user._id,
         email: user.email,
         isEmailVerified: user.isEmailVerified,
         hasPasskey: user.hasPasskey,
-        hasSecurityCode: user.hasSecurityCode,
+        hasPassword: user.hasPassword,
       }
     });
 

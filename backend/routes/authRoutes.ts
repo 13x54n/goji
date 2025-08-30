@@ -54,14 +54,14 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// Login with security code (replaces password login)
+// Login with password
 router.post('/login', async (req, res) => {
   try {
-    const { email, securityCode } = req.body;
+    const { email, password } = req.body;
 
-    if (!email || !securityCode) {
+    if (!email || !password) {
       return res.status(400).json({ 
-        error: 'Email and security code are required' 
+        error: 'Email and password are required' 
       });
     }
 
@@ -71,17 +71,17 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    // Check if user has security code
-    if (!user.securityCode) {
+    // Check if user has password
+    if (!user.password) {
       return res.status(401).json({ 
-        error: 'Account does not have a security code set' 
+        error: 'Account does not have a password set' 
       });
     }
 
-    // Verify security code
-    const isSecurityCodeValid = await bcrypt.compare(securityCode, user.securityCode);
-    if (!isSecurityCodeValid) {
-      return res.status(401).json({ error: 'Invalid security code' });
+    // Verify password
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      return res.status(401).json({ error: 'Invalid password' });
     }
 
     // Update last login
@@ -105,7 +105,7 @@ router.post('/login', async (req, res) => {
         name: user.name,
         isEmailVerified: user.isEmailVerified,
         hasPasskey: user.hasPasskey,
-        hasSecurityCode: user.hasSecurityCode,
+        hasPassword: user.hasPassword,
         lastLogin: user.lastLogin,
       }
     });
@@ -175,39 +175,39 @@ router.post('/login/passkey', async (req, res) => {
   }
 });
 
-// Set security code
-router.post('/security-code', async (req, res) => {
+// Set password
+router.post('/password', async (req, res) => {
   try {
-    const { email, securityCode } = req.body;
+    const { email, password } = req.body;
 
-    if (!email || !securityCode) {
+    if (!email || !password) {
       return res.status(400).json({ 
-        error: 'Email and security code are required' 
+        error: 'Email and password are required' 
       });
     }
 
-    if (!/^\d{6}$/.test(securityCode)) {
+    if (password.length < 6) {
       return res.status(400).json({ 
-        error: 'Security code must be exactly 6 digits' 
+        error: 'Password must be at least 6 characters long' 
       });
     }
 
-    // Hash the security code and store it in the securityCode field
+    // Hash the password
     const saltRounds = 12;
-    const hashedSecurityCode = await bcrypt.hash(securityCode, saltRounds);
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
 
     // Find or create user
     let user = await User.findOne({ email });
     if (!user) {
       user = new User({ 
         email, 
-        isEmailVerified: true, // Assuming email is verified if they can set security code
-        hasSecurityCode: true,
-        securityCode: hashedSecurityCode
+        isEmailVerified: true, // Assuming email is verified if they can set password
+        hasPassword: true,
+        password: hashedPassword
       });
     } else {
-      user.securityCode = hashedSecurityCode;
-      user.hasSecurityCode = true;
+      user.password = hashedPassword;
+      user.hasPassword = true;
     }
 
     await user.save();
@@ -221,7 +221,7 @@ router.post('/security-code', async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Security code set successfully',
+      message: 'Password set successfully',
       token,
       user: {
         id: user._id,
@@ -229,7 +229,7 @@ router.post('/security-code', async (req, res) => {
         name: user.name,
         isEmailVerified: user.isEmailVerified,
         hasPasskey: user.hasPasskey,
-        hasSecurityCode: user.hasSecurityCode,
+        hasPassword: user.hasPassword,
       }
     });
 
@@ -265,6 +265,7 @@ router.get('/profile', async (req, res) => {
         name: user.name,
         isEmailVerified: user.isEmailVerified,
         hasPasskey: user.hasPasskey,
+        hasPassword: user.hasPassword,
         lastLogin: user.lastLogin,
         createdAt: user.createdAt,
       }

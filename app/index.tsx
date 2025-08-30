@@ -23,6 +23,8 @@ export default function LoginScreen() {
   const [showPasskeyOption, setShowPasskeyOption] = useState(false);
   const [isPasskeySupported, setIsPasskeySupported] = useState(false);
   const [hasExistingSession, setHasExistingSession] = useState(false);
+  const [emailError, setEmailError] = useState("");
+  const [isEmailValid, setIsEmailValid] = useState(false);
 
   useEffect(() => {
     checkExistingSession();
@@ -51,9 +53,32 @@ export default function LoginScreen() {
     return emailRegex.test(email);
   };
 
+  const getEmailValidationMessage = (email: string) => {
+    if (!email.trim()) {
+      return "Email is required";
+    }
+    if (!validateEmail(email)) {
+      return "Please enter a valid email address";
+    }
+    return null;
+  };
+
+  const handleEmailChange = (text: string) => {
+    setEmail(text);
+    const errorMessage = getEmailValidationMessage(text);
+    setEmailError(errorMessage || "");
+    setIsEmailValid(!errorMessage && text.trim().length > 0);
+  };
+
   const handlePasskeyLogin = async () => {
     if (!hasExistingSession) {
       Alert.alert("Error", "No existing session found. Please sign in with email first.");
+      return;
+    }
+
+    if (!isPasskeySupported) {
+      // Automatically redirect to password login if biometric is not available
+      handlePasswordLogin();
       return;
     }
 
@@ -62,8 +87,8 @@ export default function LoginScreen() {
     try {
       // Authenticate with biometrics
       const authResult = await LocalAuthentication.authenticateAsync({
-        promptMessage: 'Authenticate with your passkey',
-        fallbackLabel: 'Use security code',
+        promptMessage: 'Authenticate with Face ID to sign in',
+        fallbackLabel: 'Use password',
         cancelLabel: 'Cancel',
         disableDeviceFallback: false,
       });
@@ -82,27 +107,25 @@ export default function LoginScreen() {
     }
   };
 
-  const handleSecurityCodeLogin = () => {
+  const handlePasswordLogin = () => {
     if (!email.trim()) {
       Alert.alert("Error", "Please enter your email address first");
       return;
     }
     
-    // Navigate to security code setup page for login
+    // Navigate to password setup page for login
     router.push({
-      pathname: "/security-code-setup",
+      pathname: "/password-setup",
       params: { email: email.trim(), mode: 'login' }
     });
   };
 
   const handleLogin = async () => {
-    if (!email.trim()) {
-      Alert.alert("Error", "Please enter your email address");
-      return;
-    }
-
-    if (!validateEmail(email)) {
-      Alert.alert("Error", "Please enter a valid email address");
+    // Validate email before proceeding
+    const errorMessage = getEmailValidationMessage(email);
+    if (errorMessage) {
+      setEmailError(errorMessage);
+      Alert.alert("Invalid Email", errorMessage);
       return;
     }
 
@@ -170,8 +193,8 @@ export default function LoginScreen() {
             </TouchableOpacity>
           )}
 
-          {/* Divider */}
-          {showPasskeyOption && (
+          {/* Divider - Only show when there are multiple authentication options */}
+          {showPasskeyOption && isPasskeySupported && (
             <View style={styles.divider}>
               <View style={styles.dividerLine} />
               <Text style={styles.dividerText}>or</Text>
@@ -181,43 +204,38 @@ export default function LoginScreen() {
 
           <View style={styles.inputContainer}>
             <TextInput
-              style={styles.input}
+              style={[
+                styles.input,
+                emailError ? styles.inputError : null,
+                isEmailValid ? styles.inputValid : null
+              ]}
               placeholder="Enter your email"
               placeholderTextColor="#999"
               value={email}
-              onChangeText={setEmail}
+              onChangeText={handleEmailChange}
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
               autoComplete="email"
             />
+            {emailError ? (
+              <Text style={styles.errorText}>{emailError}</Text>
+            ) : null}
           </View>
 
           <TouchableOpacity
-            style={[styles.loginButton, isLoading && styles.loginButtonDisabled]}
+            style={[
+              styles.loginButton, 
+              (isLoading || !isEmailValid) && styles.loginButtonDisabled
+            ]}
             onPress={handleLogin}
-            disabled={isLoading}
+            disabled={isLoading || !isEmailValid}
             activeOpacity={0.8}
           >
             <Text style={styles.loginButtonText}>
               {isLoading ? "Signing In..." : "Sign In"}
             </Text>
           </TouchableOpacity>
-
-          {/* Security Code Login Option */}
-          {email.trim() && (
-            <TouchableOpacity
-              style={styles.securityCodeButton}
-              onPress={handleSecurityCodeLogin}
-              disabled={isLoading}
-              activeOpacity={0.8}
-            >
-              <Ionicons name="keypad" size={20} color="#666" />
-              <Text style={styles.securityCodeButtonText}>
-                Sign in with Security Code
-              </Text>
-            </TouchableOpacity>
-          )}
         </View>
 
         <View style={styles.footer}>
@@ -308,7 +326,7 @@ const styles = StyleSheet.create({
   },
   passkeyButton: {
     height: 56,
-    backgroundColor: "#007AFF",
+    backgroundColor: "#000",
     borderRadius: 12,
     justifyContent: "center",
     alignItems: "center",
@@ -348,6 +366,20 @@ const styles = StyleSheet.create({
     color: "#666",
     fontSize: 14,
     fontWeight: "500",
+  },
+  inputError: {
+    borderColor: "#FF3B30",
+    backgroundColor: "#FFF5F5",
+  },
+  inputValid: {
+    borderColor: "#34C759",
+    backgroundColor: "#F0FFF4",
+  },
+  errorText: {
+    color: "#FF3B30",
+    fontSize: 12,
+    marginTop: 4,
+    marginLeft: 4,
   },
 
 });

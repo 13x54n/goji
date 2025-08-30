@@ -62,5 +62,24 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 
 app.listen(Number(PORT), '0.0.0.0', () => {
   console.log(`Server is running on port ${PORT}`);
-  console.log(`Server accessible at: http://10.0.0.102:${PORT}`);
+  
+  // Get the actual local IP address dynamically
+  const os = require('os');
+  const networkInterfaces = os.networkInterfaces();
+  let localIP = 'localhost';
+  
+  for (const interfaceName in networkInterfaces) {
+    const interfaces = networkInterfaces[interfaceName];
+    if (interfaces) {
+      for (const iface of interfaces) {
+        if (iface.family === 'IPv4' && !iface.internal) {
+          localIP = iface.address;
+          break;
+        }
+      }
+    }
+    if (localIP !== 'localhost') break;
+  }
+  
+  console.log(`Server accessible at: http://${localIP}:${PORT}`);
 });

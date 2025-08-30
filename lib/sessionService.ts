@@ -6,7 +6,7 @@ interface UserSession {
   email: string;
   token: string;
   hasPasskey: boolean;
-  hasSecurityCode: boolean;
+  hasPassword: boolean;
   lastActivity: number;
 }
 
@@ -116,7 +116,7 @@ class SessionService {
     email: string;
     token: string;
     hasPasskey: boolean;
-    hasSecurityCode: boolean;
+    hasPassword: boolean;
   }): Promise<void> {
     const session: UserSession = {
       ...userData,
@@ -138,14 +138,14 @@ class SessionService {
   }
 
   // Get user's authentication methods
-  getAuthMethods(): { hasPasskey: boolean; hasSecurityCode: boolean } {
+  getAuthMethods(): { hasPasskey: boolean; hasPassword: boolean } {
     if (!this.session) {
-      return { hasPasskey: false, hasSecurityCode: false };
+      return { hasPasskey: false, hasPassword: false };
     }
     
     return {
       hasPasskey: this.session.hasPasskey,
-      hasSecurityCode: this.session.hasSecurityCode,
+      hasPassword: this.session.hasPassword,
     };
   }
 

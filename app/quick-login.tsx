@@ -3,14 +3,14 @@ import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect, useState } from "react";
 import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Alert,
+    KeyboardAvoidingView,
+    Platform,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { API_ENDPOINTS } from '../config/api';
 import { sessionService } from '../lib/sessionService';
@@ -78,34 +78,34 @@ export default function QuickLoginScreen() {
     }
   };
 
-  const handleSecurityCodeLogin = async () => {
+  const handlePasswordLogin = async () => {
     if (!email.trim()) {
       Alert.alert("Error", "Please enter your email address");
       return;
     }
 
     if (!securityCode.trim()) {
-      Alert.alert("Error", "Please enter your 6-digit security code");
+      Alert.alert("Error", "Please enter your 6-digit password");
       return;
     }
 
     if (securityCode.length !== 6) {
-      Alert.alert("Error", "Please enter a valid 6-digit security code");
+      Alert.alert("Error", "Please enter a valid 6-digit password");
       return;
     }
 
     setIsLoading(true);
-    setLoginMethod('security-code');
+    setLoginMethod('password');
 
     try {
-      const response = await fetch(API_ENDPOINTS.AUTH.LOGIN_SECURITY_CODE, {
+      const response = await fetch(API_ENDPOINTS.AUTH.LOGIN, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           email: email.trim(),
-          securityCode: securityCode.trim(),
+          password: securityCode.trim(),
         }),
       });
 
@@ -115,17 +115,17 @@ export default function QuickLoginScreen() {
       }
 
       const result = await response.json();
-      console.log('Security code login successful:', result);
+      console.log('Password login successful:', result);
 
       await handleSuccessfulLogin({
         userId: result.user.id,
         email: result.user.email,
         token: result.token,
         hasPasskey: result.user.hasPasskey,
-        hasSecurityCode: result.user.hasSecurityCode,
+        hasPassword: result.user.hasPassword,
       });
     } catch (error: any) {
-      console.error('Error with security code login:', error);
+      console.error('Error with password login:', error);
       Alert.alert("Error", error.message || "Login failed. Please try again.");
     } finally {
       setIsLoading(false);
@@ -138,7 +138,7 @@ export default function QuickLoginScreen() {
     email: string;
     token: string;
     hasPasskey: boolean;
-    hasSecurityCode: boolean;
+    hasPassword: boolean;
   }) => {
     await sessionService.createSession(userData);
     router.replace("/home");
@@ -179,7 +179,7 @@ export default function QuickLoginScreen() {
 
           {showSecurityCodeInput && (
             <View style={styles.inputContainer}>
-              <Text style={styles.label}>Security Code</Text>
+              <Text style={styles.label}>Password</Text>
               <TextInput
                 style={styles.input}
                 placeholder="Enter 6-digit code"
@@ -214,14 +214,14 @@ export default function QuickLoginScreen() {
             >
               <Ionicons name="lock-closed" size={24} color="#fff" />
               <Text style={styles.loginButtonText}>
-                {showSecurityCodeInput ? "Hide Security Code" : "Login with Security Code"}
+                {showSecurityCodeInput ? "Hide Password" : "Login with Password"}
               </Text>
             </TouchableOpacity>
 
             {showSecurityCodeInput && (
               <TouchableOpacity
                 style={[styles.loginButton, styles.verifyButton, isLoading && styles.buttonDisabled]}
-                onPress={handleSecurityCodeLogin}
+                onPress={handlePasswordLogin}
                 disabled={isLoading}
                 activeOpacity={0.8}
               >

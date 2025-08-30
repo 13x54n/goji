@@ -18,6 +18,7 @@ import { sessionService } from '../lib/sessionService';
 export default function BiometricSetupScreen() {
   const { email } = useLocalSearchParams<{ email: string }>();
   const [isBiometricSupported, setIsBiometricSupported] = useState(false);
+  const [biometricType, setBiometricType] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -25,18 +26,54 @@ export default function BiometricSetupScreen() {
   }, []);
 
   const checkBiometricSupport = async () => {
-    const hasHardware = await LocalAuthentication.hasHardwareAsync();
-    const isEnrolled = await LocalAuthentication.isEnrolledAsync();
-    setIsBiometricSupported(hasHardware && isEnrolled);
+    try {
+      const hasHardware = await LocalAuthentication.hasHardwareAsync();
+      const isEnrolled = await LocalAuthentication.isEnrolledAsync();
+      const supportedTypes = await LocalAuthentication.supportedAuthenticationTypesAsync();
+      
+      console.log('Biometric support check:', {
+        hasHardware,
+        isEnrolled,
+        supportedTypes
+      });
+      
+      // Check if device supports Face ID or Touch ID
+      const hasBiometricSupport = hasHardware && isEnrolled;
+      setIsBiometricSupported(hasBiometricSupport);
+      
+      if (hasBiometricSupport) {
+        // Show what type of biometric authentication is available
+        const type = supportedTypes.includes(LocalAuthentication.AuthenticationType.FINGERPRINT) 
+          ? 'Touch ID' 
+          : 'Face ID';
+        setBiometricType(type);
+        console.log(`Device supports ${type}`);
+      }
+    } catch (error) {
+      console.error('Error checking biometric support:', error);
+      setIsBiometricSupported(false);
+    }
   };
 
   const handleEnablePasskey = async () => {
+    if (!isBiometricSupported) {
+      Alert.alert(
+        "Biometric Not Available", 
+        "Your device doesn't support biometric authentication or it's not configured. Please set up a password instead.",
+        [
+                      { text: "Set Password", onPress: handleSkipPasskey },
+          { text: "Cancel", style: "cancel" }
+        ]
+      );
+      return;
+    }
+
     setIsLoading(true);
     
     try {
       // First, authenticate with biometrics
       const authResult = await LocalAuthentication.authenticateAsync({
-        promptMessage: 'Authenticate to create your passkey',
+        promptMessage: 'Authenticate with Face ID to create your passkey',
         fallbackLabel: 'Use passcode',
         cancelLabel: 'Cancel',
         disableDeviceFallback: false,
@@ -104,9 +141,9 @@ export default function BiometricSetupScreen() {
   };
 
   const handleSkipPasskey = () => {
-    // Navigate to security code setup page with email parameter
+    // Navigate to password setup page with email parameter
     router.push({
-      pathname: "/security-code-setup",
+      pathname: "/password-setup",
       params: { email: email }
     });
   };
@@ -114,7 +151,7 @@ export default function BiometricSetupScreen() {
   const promptForSecurityCode = () => {
     Alert.prompt(
       "Enter 6-Digit Code",
-      "Please enter a 6-digit security code:",
+              "Please enter a 6-digit password:",
       [
         {
           text: "Cancel",
@@ -124,42 +161,42 @@ export default function BiometricSetupScreen() {
           text: "Set Code",
           onPress: async (code) => {
             if (code && code.length === 6 && /^\d{6}$/.test(code)) {
-              // Send security code to backend
+              // Send password to backend
               try {
-                const response = await fetch(API_ENDPOINTS.AUTH.SECURITY_CODE, {
+                const response = await fetch(API_ENDPOINTS.AUTH.PASSWORD, {
                   method: 'POST',
                   headers: {
                     'Content-Type': 'application/json',
                   },
                   body: JSON.stringify({
                     email: email,
-                    securityCode: code,
+                    password: code,
                   }),
                 });
 
                 if (!response.ok) {
-                  throw new Error('Failed to set security code on server');
+                  throw new Error('Failed to set password on server');
                 }
 
                 const result = await response.json();
-                console.log('Security code set on server:', result);
+                console.log('Password set on server:', result);
               } catch (error) {
-                console.error('Error setting security code on server:', error);
-                Alert.alert("Server Error", "Failed to set security code. Please try again.");
+                console.error('Error setting password on server:', error);
+                Alert.alert("Server Error", "Failed to set password. Please try again.");
                 return;
               }
-              // Create session after successful security code setup
+              // Create session after successful password setup
               await sessionService.createSession({
                 userId: "user-" + Date.now(), // Generate a temporary user ID
                 email: email,
-                token: "security-code-token", // In a real app, you'd get this from the backend
+                token: "password-token", // In a real app, you'd get this from the backend
                 hasPasskey: false,
-                hasSecurityCode: true,
+                hasPassword: true,
               });
 
               Alert.alert(
-                "Security Code Set",
-                "Your 6-digit security code has been set successfully.",
+                "Password Set",
+                "Your 6-digit password has been set successfully.",
                 [
                   {
                     text: "Continue",
@@ -197,9 +234,14 @@ export default function BiometricSetupScreen() {
       <View style={styles.content}>
         <View style={styles.header}>
           <Ionicons name="key" size={80} color="#000000" />
-          <Text style={styles.title}>Create Your Passkey</Text>
+          <Text style={styles.title}>
+            {isBiometricSupported ? 'Create Your Passkey' : 'Set Up Authentication'}
+          </Text>
           <Text style={styles.subtitle}>
-            Use your fingerprint or face ID as a secure passkey for passwordless login
+            {isBiometricSupported 
+              ? `Use ${biometricType} as a secure passkey for passwordless login`
+              : 'Set up a password for quick and secure access to your wallet'
+            }
           </Text>
         </View>
 
@@ -214,7 +256,7 @@ export default function BiometricSetupScreen() {
               >
                 <Ionicons name="key" size={24} color="#fff" />
                 <Text style={styles.primaryButtonText}>
-                  {isLoading ? "Creating passkey..." : "Create Passkey"}
+                  {isLoading ? "Creating passkey..." : `Create ${biometricType} Passkey`}
                 </Text>
               </TouchableOpacity>
 
@@ -223,24 +265,18 @@ export default function BiometricSetupScreen() {
                 onPress={handleSkipPasskey}
                 activeOpacity={0.8}
               >
-                <Text style={styles.secondaryButtonText}>Skip for now</Text>
+                <Text style={styles.secondaryButtonText}>Use Password Instead</Text>
               </TouchableOpacity>
             </>
           ) : (
-            <View style={styles.notSupported}>
-              <Ionicons name="warning" size={48} color="#FF9500" />
-              <Text style={styles.notSupportedTitle}>Passkey Not Available</Text>
-              <Text style={styles.notSupportedText}>
-                Your device doesn't support biometric authentication or it's not set up for passkey creation.
-              </Text>
-              <TouchableOpacity
-                style={[styles.button, styles.primaryButton]}
-                onPress={handleSkipPasskey}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.primaryButtonText}>Continue</Text>
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity
+              style={[styles.button, styles.primaryButton]}
+              onPress={handleSkipPasskey}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="keypad" size={24} color="#fff" />
+                              <Text style={styles.primaryButtonText}>Set Up Password</Text>
+            </TouchableOpacity>
           )}
         </View>
       </View>
@@ -310,25 +346,5 @@ const styles = StyleSheet.create({
     color: "#666",
     fontSize: 16,
     fontWeight: "600",
-  },
-  notSupported: {
-    alignItems: "center",
-    paddingVertical: 20,
-  },
-  notSupportedTitle: {
-    fontSize: 20,
-    fontWeight: "600",
-    color: "#1a1a1a",
-    marginTop: 16,
-    marginBottom: 8,
-    textAlign: "center",
-  },
-  notSupportedText: {
-    fontSize: 14,
-    color: "#666",
-    textAlign: "center",
-    lineHeight: 20,
-    marginBottom: 24,
-    paddingHorizontal: 20,
   },
 });
