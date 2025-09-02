@@ -25,18 +25,13 @@ export const sendVerificationEmail = async (
     const mailOptions = {
       from: process.env.SMTP_USER || process.env.EMAIL_USER,
       to: email,
-      subject: 'Goji - Email Verification Code',
+      subject: 'Goji - Verification Code',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <div style="background-color: #007AFF; color: white; padding: 20px; text-align: center;">
-            <h1 style="margin: 0;">Goji</h1>
-            <p style="margin: 10px 0 0 0;">Email Verification</p>
-          </div>
-          
           <div style="padding: 30px; background-color: #f9f9f9;">
             <h2 style="color: #333; margin-bottom: 20px;">Your Verification Code</h2>
             <p style="color: #666; margin-bottom: 20px;">
-              Please enter the following verification code to complete your sign-in:
+              Use the following verification code to complete your sign-in:
             </p>
             
             <div style="background-color: white; border: 2px solid #007AFF; border-radius: 8px; padding: 20px; text-align: center; margin: 20px 0;">
@@ -60,7 +55,6 @@ export const sendVerificationEmail = async (
     };
 
     await transporter.sendMail(mailOptions);
-    console.log(`Verification email sent to ${email}`);
     return true;
   } catch (error) {
     console.error('Error sending verification email:', error);
@@ -71,17 +65,7 @@ export const sendVerificationEmail = async (
 // Verify email configuration
 export const verifyEmailConfig = async (): Promise<boolean> => {
   try {
-    console.log('Verifying email configuration...');
-    console.log('Environment variables:', {
-      host: process.env.SMTP_HOST || process.env.EMAIL_HOST,
-      port: process.env.SMTP_PORT || process.env.EMAIL_PORT,
-      secure: process.env.SMTP_SECURE || process.env.EMAIL_SECURE,
-      user: process.env.SMTP_USER || process.env.EMAIL_USER,
-      pass: (process.env.SMTP_PASS || process.env.EMAIL_PASS) ? '***' : 'NOT SET'
-    });
-    
     await transporter.verify();
-    console.log('Email configuration is valid');
     return true;
   } catch (error) {
     console.error('Email configuration error:', error);

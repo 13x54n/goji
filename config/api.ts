@@ -1,4 +1,5 @@
-export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://10.0.0.82:4000';
+// API Configuration
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
 
 // API Endpoints
 export const API_ENDPOINTS = {
@@ -9,10 +10,7 @@ export const API_ENDPOINTS = {
     DELETE: (credentialId: string) => `${API_BASE_URL}/api/passkeys/${credentialId}`,
   },
   AUTH: {
-    REGISTER: `${API_BASE_URL}/api/auth/register`,
-    LOGIN: `${API_BASE_URL}/api/auth/login`,
     LOGIN_PASSKEY: `${API_BASE_URL}/api/auth/login/passkey`,
-    PASSWORD: `${API_BASE_URL}/api/auth/password`,
     PROFILE: `${API_BASE_URL}/api/auth/profile`,
   },
   EMAIL: {

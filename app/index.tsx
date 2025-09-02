@@ -7,6 +7,7 @@ import React, { useEffect, useState } from "react";
 import {
   Alert,
   KeyboardAvoidingView,
+  Linking,
   Platform,
   StyleSheet,
   Text,
@@ -35,7 +36,6 @@ export default function LoginScreen() {
     const session = sessionService.getSession();
     if (session && sessionService.isLoggedIn()) {
       setHasExistingSession(true);
-      // Check if user has passkey for quick login
       if (session.hasPasskey) {
         setShowPasskeyOption(true);
       }
@@ -63,11 +63,34 @@ export default function LoginScreen() {
     return null;
   };
 
-  const handleEmailChange = (text: string) => {
+  const handleEmailChange = async (text: string) => {
     setEmail(text);
     const errorMessage = getEmailValidationMessage(text);
     setEmailError(errorMessage || "");
     setIsEmailValid(!errorMessage && text.trim().length > 0);
+
+    if (isEmailValid) {
+      try {
+        const response = await fetch(API_ENDPOINTS.AUTH.PROFILE, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ email: email.trim() }),
+        });
+
+        if (response.ok) {
+          const userData = await response.json();
+          if (userData.user.hasPasskey) {
+            setShowPasskeyOption(true);
+          }
+        }
+      } catch (error) {
+        console.error('Error checking user:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
   };
 
   const handlePasskeyLogin = async () => {
@@ -77,24 +100,21 @@ export default function LoginScreen() {
     }
 
     if (!isPasskeySupported) {
-      // Automatically redirect to password login if biometric is not available
-      handlePasswordLogin();
+      Alert.alert("Biometric Not Available", "Your device doesn't support biometric authentication. Please contact support.");
       return;
     }
 
     setIsLoading(true);
-    
+
     try {
-      // Authenticate with biometrics
       const authResult = await LocalAuthentication.authenticateAsync({
         promptMessage: 'Authenticate with Face ID to sign in',
-        fallbackLabel: 'Use password',
+        fallbackLabel: 'Use passcode',
         cancelLabel: 'Cancel',
         disableDeviceFallback: false,
       });
 
       if (authResult.success) {
-        // Passkey authentication successful, navigate to home
         router.replace("/home");
       } else {
         Alert.alert("Authentication Failed", "Passkey authentication was cancelled or failed.");
@@ -107,33 +127,21 @@ export default function LoginScreen() {
     }
   };
 
-  const handlePasswordLogin = () => {
+  const handleContinue = async () => {
     if (!email.trim()) {
-      Alert.alert("Error", "Please enter your email address first");
+      Alert.alert("Error", "Please enter your email address");
       return;
     }
-    
-    // Navigate to password setup page for login
-    router.push({
-      pathname: "/password-setup",
-      params: { email: email.trim(), mode: 'login' }
-    });
-  };
 
-  const handleLogin = async () => {
-    // Validate email before proceeding
-    const errorMessage = getEmailValidationMessage(email);
-    if (errorMessage) {
-      setEmailError(errorMessage);
-      Alert.alert("Invalid Email", errorMessage);
+    if (!isEmailValid) {
+      Alert.alert("Error", "Please enter a valid email address");
       return;
     }
 
     setIsLoading(true);
-
+    
     try {
-      // Send verification code to email
-      const response = await fetch(API_ENDPOINTS.EMAIL.SEND_CODE, {
+      const sendmail = await fetch(API_ENDPOINTS.EMAIL.SEND_CODE, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -141,22 +149,15 @@ export default function LoginScreen() {
         body: JSON.stringify({ email: email.trim() }),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to send verification code');
+      if (sendmail.ok) {
+        router.push({
+          pathname: "/verify",
+          params: { email: email.trim() }
+        });
       }
+    } catch (error) {
+      console.error('Error checking user:', error);
 
-      const result = await response.json();
-      console.log('Verification code sent:', result);
-
-      // Navigate to verification screen with email parameter
-      router.push({
-        pathname: "/verify",
-        params: { email: email.trim() }
-      });
-    } catch (error: any) {
-      console.error('Error sending verification code:', error);
-      Alert.alert("Error", error.message || "Failed to send verification code. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -170,45 +171,26 @@ export default function LoginScreen() {
       <StatusBar style="dark" />
 
       <View style={styles.content}>
-        <Image source={require('../assets/images/illustrations/welcome.png')} style={styles.welcome} />
-        <View style={styles.header}>
-          <Text style={styles.title}>Welcome to Goji 👋</Text>
+        <View style={styles.logoContainer}>
+          <Image
+            source={require("../assets/images/illustrations/welcome.png")}
+            style={styles.logo}
+            contentFit="contain"
+          />
+        </View>
 
-          <Text style={styles.subtitle}>Your Wallet AI for your crypto.</Text>
+        <View style={styles.header}>
+          <Text style={styles.title}>Welcome to Goji</Text>
+          <Text style={styles.subtitle}>
+            Secure authentication with passkeys
+          </Text>
         </View>
 
         <View style={styles.form}>
-          {/* Passkey Login Option */}
-          {showPasskeyOption && isPasskeySupported && (
-            <TouchableOpacity
-              style={styles.passkeyButton}
-              onPress={handlePasskeyLogin}
-              disabled={isLoading}
-              activeOpacity={0.8}
-            >
-              <Ionicons name="finger-print" size={24} color="#fff" />
-              <Text style={styles.passkeyButtonText}>
-                {isLoading ? "Authenticating..." : "Sign in with Passkey"}
-              </Text>
-            </TouchableOpacity>
-          )}
-
-          {/* Divider - Only show when there are multiple authentication options */}
-          {showPasskeyOption && isPasskeySupported && (
-            <View style={styles.divider}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>or</Text>
-              <View style={styles.dividerLine} />
-            </View>
-          )}
-
           <View style={styles.inputContainer}>
+            <Text style={styles.label}>Email Address</Text>
             <TextInput
-              style={[
-                styles.input,
-                emailError ? styles.inputError : null,
-                isEmailValid ? styles.inputValid : null
-              ]}
+              style={[styles.input, emailError ? styles.inputError : null]}
               placeholder="Enter your email"
               placeholderTextColor="#999"
               value={email}
@@ -223,24 +205,36 @@ export default function LoginScreen() {
             ) : null}
           </View>
 
+          {showPasskeyOption && (
+            <TouchableOpacity
+              style={[styles.passkeyButton, isLoading && styles.buttonDisabled]}
+              onPress={handlePasskeyLogin}
+              disabled={isLoading}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="finger-print" size={24} color="#000" />
+              <Text style={styles.passkeyButtonText}>
+                {isLoading ? "Authenticating..." : "Sign in with Passkey"}
+              </Text>
+            </TouchableOpacity>
+          )}
+
           <TouchableOpacity
             style={[
-              styles.loginButton, 
-              (isLoading || !isEmailValid) && styles.loginButtonDisabled
+              styles.continueButton,
+              (!isEmailValid || isLoading) && styles.continueButtonDisabled
             ]}
-            onPress={handleLogin}
-            disabled={isLoading || !isEmailValid}
+            onPress={handleContinue}
+            disabled={!isEmailValid || isLoading}
             activeOpacity={0.8}
           >
-            <Text style={styles.loginButtonText}>
-              {isLoading ? "Signing In..." : "Sign In"}
+            <Text style={styles.continueButtonText}>
+              {isLoading ? 'Checking...' : 'Continue'}
             </Text>
           </TouchableOpacity>
-        </View>
 
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>
-            By signing in, you agree to our <Text style={styles.footerLink}>Terms of Service</Text> and <Text style={styles.footerLink}>Privacy Policy</Text>.
+          <Text style={{...styles.header, ...styles.subtitle, fontSize: 16, marginTop: 16}}>
+            By continuing, you agree to our <Text style={{color: "#000", fontWeight: "600"}} accessibilityRole="link" onPress={() => Linking.openURL('https://goji.app/terms')}>Terms of Service</Text> and consent to our <Text style={{color: "#000", fontWeight: "600"}} accessibilityRole="link" onPress={() => Linking.openURL('https://goji.app/privacy')}>Privacy Policy</Text>
           </Text>
         </View>
       </View>
@@ -260,20 +254,29 @@ const styles = StyleSheet.create({
     paddingTop: 100,
     paddingBottom: 50,
   },
-  welcome: {
-    width: "100%",
-    height: 225,
-    marginBottom: 28,
+  logoContainer: {
+    alignItems: "center",
+    marginBottom: 18,
+    backgroundColor: "red",
+    width: 80,
+    height: 80,
+    aspectRatio: 1,
+    alignSelf: "center",
+  },
+  logo: {
+    width: '100%',
+    height: '100%',
+    resizeMode: "contain",
   },
   header: {
-    marginBottom: 28,
+    alignItems: "center",
+    marginBottom: 48,
   },
   title: {
     fontSize: 32,
     fontWeight: "700",
     color: "#1a1a1a",
-    marginBottom: 4,
-    textAlign: "center",
+    marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
@@ -284,7 +287,13 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   inputContainer: {
-    marginBottom: 15,
+    marginBottom: 24,
+  },
+  label: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#1a1a1a",
+    marginBottom: 8,
   },
   input: {
     height: 56,
@@ -296,90 +305,48 @@ const styles = StyleSheet.create({
     color: "#1a1a1a",
     backgroundColor: "#fafafa",
   },
-  loginButton: {
+  inputError: {
+    borderColor: "#FF3B30",
+  },
+  errorText: {
+    color: "#FF3B30",
+    fontSize: 14,
+    marginTop: 4,
+  },
+  continueButton: {
     height: 56,
     backgroundColor: "#000000",
     borderRadius: 12,
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 8,
+    marginBottom: 16,
   },
-  loginButtonDisabled: {
+  continueButtonDisabled: {
     backgroundColor: "#ccc",
   },
-  loginButtonText: {
+  continueButtonText: {
     color: "#fff",
     fontSize: 16,
-    fontWeight: "600",
-  },
-  footer: {
-    marginTop: 24,
-  },
-  footerText: {
-    fontSize: 14,
-    color: "#666",
-    textAlign: "center",
-  },
-  footerLink: {
-    color: "#000000",
     fontWeight: "600",
   },
   passkeyButton: {
     height: 56,
-    backgroundColor: "#000",
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#000",
     borderRadius: 12,
+    flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 16,
-    flexDirection: 'row',
     gap: 12,
+    marginBottom: 16,
+  },
+  buttonDisabled: {
+    backgroundColor: "#ccc",
   },
   passkeyButtonText: {
-    color: "#fff",
+    color: "#000",
     fontSize: 16,
     fontWeight: "600",
   },
-  divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 20,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#e1e1e1',
-  },
-  dividerText: {
-    marginHorizontal: 16,
-    color: '#999',
-    fontSize: 14,
-  },
-  securityCodeButton: {
-    height: 48,
-    justifyContent: "center",
-    alignItems: "center",
-    marginTop: 16,
-    flexDirection: 'row',
-    gap: 8,
-  },
-  securityCodeButtonText: {
-    color: "#666",
-    fontSize: 14,
-    fontWeight: "500",
-  },
-  inputError: {
-    borderColor: "#FF3B30",
-    backgroundColor: "#FFF5F5",
-  },
-  inputValid: {
-    borderColor: "#34C759",
-    backgroundColor: "#F0FFF4",
-  },
-  errorText: {
-    color: "#FF3B30",
-    fontSize: 12,
-    marginTop: 4,
-    marginLeft: 4,
-  },
-
 });

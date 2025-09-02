@@ -55,7 +55,6 @@ export default function SearchScreen() {
 
   const handleResultPress = (result: any) => {
     // TODO: Navigate to specific result
-    console.log('Selected result:', result.title);
   };
 
   const renderSearchResults = () => {

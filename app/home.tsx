@@ -3,14 +3,15 @@ import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
 import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View
+    Alert,
+    BackHandler,
+    KeyboardAvoidingView,
+    Platform,
+    SafeAreaView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import { sessionService } from '../lib/sessionService';
 import AIChat from './components/AIChat';
@@ -36,9 +37,13 @@ const tabs: TabItem[] = [
 export default function HomeScreen() {
   const [activeTab, setActiveTab] = useState('wallet');
   const [session, setSession] = useState<any>(null);
-  const [selectedAccount, setSelectedAccount] = useState('Account 316');
   const [isDrawerVisible, setIsDrawerVisible] = useState(false);
 
+  useEffect(() => {
+    // Prevent Android hardware back from leaving Home
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => true);
+    return () => backHandler.remove();
+  }, []);
 
   useEffect(() => {
     // Check if user is logged in
@@ -61,14 +66,6 @@ export default function HomeScreen() {
 
   const handleNotificationPress = () => {
     router.push('/notifications');
-  };
-
-  const handleCopyAddress = () => {
-    Alert.alert('Copied', 'Wallet address copied to clipboard');
-  };
-
-  const handleExpand = () => {
-    Alert.alert('Expand', 'Full wallet view will be implemented here');
   };
 
   const handleSearchPress = () => {

@@ -2,15 +2,16 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React from 'react';
 import {
-    Animated,
-    Dimensions,
-    Modal,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    TouchableWithoutFeedback,
-    View
+  Animated,
+  Dimensions,
+  Modal,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View
 } from 'react-native';
+import { sessionService } from '../../lib/sessionService';
 
 interface MenuDrawerProps {
   visible: boolean;
@@ -21,6 +22,8 @@ const { width: screenWidth } = Dimensions.get('window');
 
 export default function MenuDrawer({ visible, onClose }: MenuDrawerProps) {
   const slideAnim = React.useRef(new Animated.Value(-screenWidth)).current;
+  const [userName, setUserName] = React.useState<string>('');
+  const [userEmail, setUserEmail] = React.useState<string>('');
 
   React.useEffect(() => {
     if (visible) {
@@ -38,6 +41,19 @@ export default function MenuDrawer({ visible, onClose }: MenuDrawerProps) {
     }
   }, [visible, slideAnim]);
 
+  React.useEffect(() => {
+    const session = sessionService.getSession();
+    setUserEmail(session?.email || '');
+    // If you later store name in session, prefer that; for now, derive from email local-part
+    if (session?.email) {
+      const local = session.email.split('@')[0];
+      const pretty = local.replace(/[-_.]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+      setUserName(pretty);
+    } else {
+      setUserName('');
+    }
+  }, [visible]);
+
   const handleMenuPress = (screen: string) => {
     onClose();
     setTimeout(() => {
@@ -47,42 +63,28 @@ export default function MenuDrawer({ visible, onClose }: MenuDrawerProps) {
 
   const handleLogout = () => {
     onClose();
-    // TODO: Implement logout logic
-    console.log('Logout pressed');
   };
 
   const menuItems = [
-    {
-      id: 'profile',
-      title: 'Profile',
-      icon: 'person-outline',
-      screen: 'profile',
-    },
-    {
-      id: 'settings',
-      title: 'Settings',
-      icon: 'settings-outline',
-      screen: 'settings',
-    },
-    {
-      id: 'security',
-      title: 'Security',
-      icon: 'shield-checkmark-outline',
-      screen: 'security',
-    },
-    {
-      id: 'help',
-      title: 'Help & Support',
-      icon: 'help-circle-outline',
-      screen: 'help',
-    },
-    {
-      id: 'about',
-      title: 'About',
-      icon: 'information-circle-outline',
-      screen: 'about',
-    },
+    { id: 'profile', title: 'Profile', icon: 'person-outline', screen: 'profile' },
+    { id: 'settings', title: 'Settings', icon: 'settings-outline', screen: 'settings' },
+    { id: 'security', title: 'Security', icon: 'shield-checkmark-outline', screen: 'security' },
+    { id: 'help', title: 'Help & Support', icon: 'help-circle-outline', screen: 'help' },
+    { id: 'about', title: 'About', icon: 'information-circle-outline', screen: 'about' },
   ];
+
+  const initials = React.useMemo(() => {
+    if (userName) {
+      const parts = userName.trim().split(' ');
+      const first = parts[0]?.[0] || '';
+      const second = parts[1]?.[0] || '';
+      return (first + second).toUpperCase();
+    }
+    if (userEmail) {
+      return userEmail[0]?.toUpperCase() || 'U';
+    }
+    return 'U';
+  }, [userName, userEmail]);
 
   return (
     <Modal
@@ -92,10 +94,6 @@ export default function MenuDrawer({ visible, onClose }: MenuDrawerProps) {
       onRequestClose={onClose}
     >
       <View style={styles.overlay}>
-        <TouchableWithoutFeedback onPress={onClose}>
-          <View style={styles.backdrop} />
-        </TouchableWithoutFeedback>
-        
         <Animated.View
           style={[
             styles.drawer,
@@ -106,17 +104,19 @@ export default function MenuDrawer({ visible, onClose }: MenuDrawerProps) {
         >
           {/* Drawer Header */}
           <View style={styles.header}>
-            <View style={styles.userInfo}>
+            <TouchableOpacity style={styles.userInfo}>
               <View style={styles.avatar}>
-                <Ionicons name="person" size={32} color="#fff" />
+                {userName || userEmail ? (
+                  <Text style={{ color: '#fff', fontWeight: '700' }}>{initials}</Text>
+                ) : (
+                  <Ionicons name="person" size={32} color="#fff" />
+                )}
               </View>
               <View style={styles.userDetails}>
-                <Text style={styles.userName}>John Doe</Text>
-                <Text style={styles.userEmail}>john@example.com</Text>
+                {!!userEmail && <Text style={styles.userEmail}>{userEmail.split('@')[0]}</Text>}
+                <Text style={styles.userName}>Account & settings</Text>
               </View>
-            </View>
-            <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-              <Ionicons name="close" size={24} color="#666" />
+              <Ionicons name="chevron-forward" size={20} color="#ccc" />
             </TouchableOpacity>
           </View>
 
@@ -134,21 +134,14 @@ export default function MenuDrawer({ visible, onClose }: MenuDrawerProps) {
                   </View>
                   <Text style={styles.menuItemText}>{item.title}</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={20} color="#ccc" />
               </TouchableOpacity>
             ))}
           </View>
-
-          {/* Footer */}
-          <View style={styles.footer}>
-            <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-              <View style={styles.logoutContent}>
-                <Ionicons name="log-out-outline" size={24} color="#EF4444" />
-                <Text style={styles.logoutText}>Logout</Text>
-              </View>
-            </TouchableOpacity>
-          </View>
         </Animated.View>
+
+        <TouchableWithoutFeedback onPress={onClose}>
+          <View style={styles.backdrop} />
+        </TouchableWithoutFeedback>
       </View>
     </Modal>
   );
@@ -168,7 +161,7 @@ const styles = StyleSheet.create({
     height: '100%',
     backgroundColor: '#ffffff',
     shadowColor: '#000',
-    shadowOffset: { width: 2, height: 0 },
+    shadowOffset: { width: -2, height: 0 },
     shadowOpacity: 0.25,
     shadowRadius: 10,
     elevation: 10,
@@ -192,7 +185,7 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#000',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -201,28 +194,28 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   userName: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
+    fontSize: 14,
+    color: '#666',
     marginBottom: 2,
   },
   userEmail: {
-    fontSize: 14,
-    color: '#666',
+    fontWeight: '600',
+    fontSize: 16,
+    color: '#333',
   },
   closeButton: {
     padding: 8,
   },
   menuItems: {
     flex: 1,
-    paddingVertical: 20,
+    paddingVertical: 10,
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingVertical: 5,
   },
   menuItemContent: {
     flexDirection: 'row',
@@ -232,8 +225,6 @@ const styles = StyleSheet.create({
   menuItemIcon: {
     width: 40,
     height: 40,
-    borderRadius: 20,
-    backgroundColor: '#f8f9fa',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -242,24 +233,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
     fontWeight: '500',
-  },
-  footer: {
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-    borderTopWidth: 1,
-    borderTopColor: '#e1e1e1',
-  },
-  logoutButton: {
-    paddingVertical: 12,
-  },
-  logoutContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  logoutText: {
-    fontSize: 16,
-    color: '#EF4444',
-    fontWeight: '500',
-    marginLeft: 12,
   },
 });

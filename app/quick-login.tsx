@@ -17,10 +17,7 @@ import { sessionService } from '../lib/sessionService';
 
 export default function QuickLoginScreen() {
   const [email, setEmail] = useState("");
-  const [securityCode, setSecurityCode] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [loginMethod, setLoginMethod] = useState<'passkey' | 'security-code' | null>(null);
-  const [showSecurityCodeInput, setShowSecurityCodeInput] = useState(false);
 
   useEffect(() => {
     // Check if user has existing session
@@ -37,111 +34,33 @@ export default function QuickLoginScreen() {
     }
 
     setIsLoading(true);
-    setLoginMethod('passkey');
 
     try {
-      // For passkey login, we would typically use WebAuthn API
-      // For now, we'll simulate the passkey verification
-      Alert.alert(
-        "Passkey Login",
-        "Passkey authentication would be triggered here. For demo purposes, we'll simulate success.",
-        [
-          {
-            text: "Cancel",
-            style: "cancel",
-            onPress: () => {
-              setIsLoading(false);
-              setLoginMethod(null);
-            }
-          },
-          {
-            text: "Simulate Success",
-            onPress: async () => {
-              // Simulate successful passkey login
-              await handleSuccessfulLogin({
-                userId: "user123",
-                email: email.trim(),
-                token: "simulated-passkey-token",
-                hasPasskey: true,
-                hasSecurityCode: false,
-              });
-            }
-          }
-        ]
-      );
-    } catch (error: any) {
-      console.error('Error with passkey login:', error);
-      Alert.alert("Error", "Passkey login failed. Please try again.");
-    } finally {
-      setIsLoading(false);
-      setLoginMethod(null);
-    }
-  };
-
-  const handlePasswordLogin = async () => {
-    if (!email.trim()) {
-      Alert.alert("Error", "Please enter your email address");
-      return;
-    }
-
-    if (!securityCode.trim()) {
-      Alert.alert("Error", "Please enter your 6-digit password");
-      return;
-    }
-
-    if (securityCode.length !== 6) {
-      Alert.alert("Error", "Please enter a valid 6-digit password");
-      return;
-    }
-
-    setIsLoading(true);
-    setLoginMethod('password');
-
-    try {
-      const response = await fetch(API_ENDPOINTS.AUTH.LOGIN, {
-        method: 'POST',
+      // For now, we'll just check if the user exists and has a passkey
+      // In a real implementation, this would trigger the passkey authentication flow
+      const response = await fetch(API_ENDPOINTS.AUTH.PROFILE, {
+        method: 'GET',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          email: email.trim(),
-          password: securityCode.trim(),
-        }),
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Login failed');
+        throw new Error('User not found or not authenticated');
       }
 
-      const result = await response.json();
-      console.log('Password login successful:', result);
-
-      await handleSuccessfulLogin({
-        userId: result.user.id,
-        email: result.user.email,
-        token: result.token,
-        hasPasskey: result.user.hasPasskey,
-        hasPassword: result.user.hasPassword,
+      // Navigate to biometric setup if user exists
+      router.push({
+        pathname: "/biometric-setup",
+        params: { email: email.trim() }
       });
+
     } catch (error: any) {
-      console.error('Error with password login:', error);
-      Alert.alert("Error", error.message || "Login failed. Please try again.");
+      console.error('Error with passkey login:', error);
+      Alert.alert("Error", "Please set up your passkey first or contact support.");
     } finally {
       setIsLoading(false);
-      setLoginMethod(null);
     }
-  };
-
-  const handleSuccessfulLogin = async (userData: {
-    userId: string;
-    email: string;
-    token: string;
-    hasPasskey: boolean;
-    hasPassword: boolean;
-  }) => {
-    await sessionService.createSession(userData);
-    router.replace("/home");
   };
 
   const handleNewAccount = () => {
@@ -157,93 +76,61 @@ export default function QuickLoginScreen() {
       
       <View style={styles.content}>
         <View style={styles.header}>
-          <Text style={styles.title}>Welcome Back</Text>
-          <Text style={styles.subtitle}>Choose your login method</Text>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => router.back()}
+          >
+            <Ionicons name="arrow-back" size={24} color="#1a1a1a" />
+          </TouchableOpacity>
+          
+          <Text style={styles.title}>Quick Login</Text>
+          
+          <View style={styles.placeholder} />
         </View>
 
-        <View style={styles.form}>
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Email Address</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Enter your email"
-              placeholderTextColor="#999"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-              autoComplete="email"
-            />
-          </View>
+        <View style={styles.descriptionContainer}>
+          <Text style={styles.description}>
+            Sign in with your passkey for quick access
+          </Text>
+        </View>
 
-          {showSecurityCodeInput && (
-            <View style={styles.inputContainer}>
-              <Text style={styles.label}>Password</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter 6-digit code"
-                placeholderTextColor="#999"
-                value={securityCode}
-                onChangeText={setSecurityCode}
-                keyboardType="number-pad"
-                maxLength={6}
-                secureTextEntry={false}
-              />
-            </View>
-          )}
+        <View style={styles.inputContainer}>
+          <Text style={styles.inputLabel}>Email Address</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Enter your email"
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoCorrect={false}
+            autoComplete="email"
+          />
+        </View>
 
-          <View style={styles.loginOptions}>
-            <TouchableOpacity
-              style={[styles.loginButton, styles.passkeyButton, isLoading && styles.buttonDisabled]}
-              onPress={handlePasskeyLogin}
-              disabled={isLoading}
-              activeOpacity={0.8}
-            >
-              <Ionicons name="key" size={24} color="#fff" />
-              <Text style={styles.loginButtonText}>
-                {isLoading && loginMethod === 'passkey' ? "Authenticating..." : "Login with Passkey"}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.loginButton, styles.securityCodeButton, isLoading && styles.buttonDisabled]}
-              onPress={() => setShowSecurityCodeInput(!showSecurityCodeInput)}
-              disabled={isLoading}
-              activeOpacity={0.8}
-            >
-              <Ionicons name="lock-closed" size={24} color="#fff" />
-              <Text style={styles.loginButtonText}>
-                {showSecurityCodeInput ? "Hide Password" : "Login with Password"}
-              </Text>
-            </TouchableOpacity>
-
-            {showSecurityCodeInput && (
-              <TouchableOpacity
-                style={[styles.loginButton, styles.verifyButton, isLoading && styles.buttonDisabled]}
-                onPress={handlePasswordLogin}
-                disabled={isLoading}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.loginButtonText}>
-                  {isLoading && loginMethod === 'security-code' ? "Verifying..." : "Verify Code"}
-                </Text>
-              </TouchableOpacity>
-            )}
-          </View>
-
-          <View style={styles.divider}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>or</Text>
-            <View style={styles.dividerLine} />
-          </View>
-
+        <View style={styles.buttonContainer}>
           <TouchableOpacity
-            style={styles.newAccountButton}
-            onPress={handleNewAccount}
+            style={[
+              styles.passkeyButton,
+              !email.trim() && styles.passkeyButtonDisabled
+            ]}
+            onPress={handlePasskeyLogin}
+            disabled={!email.trim() || isLoading}
             activeOpacity={0.8}
           >
-            <Text style={styles.newAccountButtonText}>Login with Different Account</Text>
+            <Ionicons name="finger-print" size={24} color="#fff" />
+            <Text style={styles.passkeyButtonText}>
+              {isLoading ? 'Signing In...' : 'Sign In with Passkey'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.footer}>
+          <Text style={styles.footerText}>
+            Don't have an account?
+          </Text>
+          <TouchableOpacity onPress={handleNewAccount}>
+            <Text style={styles.footerLink}>Create one</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -258,33 +145,48 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    justifyContent: "flex-start",
     paddingHorizontal: 24,
-    paddingTop: 100,
+    paddingTop: 60,
     paddingBottom: 50,
   },
   header: {
-    alignItems: "center",
-    marginBottom: 48,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 32,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#f5f5f5',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   title: {
-    fontSize: 32,
+    fontSize: 24,
     fontWeight: "700",
     color: "#1a1a1a",
-    marginBottom: 8,
+    textAlign: 'center',
+    flex: 1,
   },
-  subtitle: {
+  placeholder: {
+    width: 40,
+  },
+  descriptionContainer: {
+    alignItems: 'center',
+    marginBottom: 48,
+  },
+  description: {
     fontSize: 16,
     color: "#666",
-    textAlign: "center",
-  },
-  form: {
-    width: "100%",
+    textAlign: 'center',
+    lineHeight: 24,
   },
   inputContainer: {
-    marginBottom: 24,
+    marginBottom: 32,
   },
-  label: {
+  inputLabel: {
     fontSize: 16,
     fontWeight: "600",
     color: "#1a1a1a",
@@ -292,69 +194,46 @@ const styles = StyleSheet.create({
   },
   input: {
     height: 56,
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: "#e1e1e1",
     borderRadius: 12,
     paddingHorizontal: 16,
     fontSize: 16,
-    color: "#1a1a1a",
-    backgroundColor: "#fafafa",
+    backgroundColor: "#fff",
   },
-  loginOptions: {
-    gap: 16,
-    marginBottom: 24,
-  },
-  loginButton: {
-    height: 56,
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
-    flexDirection: "row",
+  buttonContainer: {
+    marginBottom: 32,
   },
   passkeyButton: {
-    backgroundColor: "#007AFF",
+    height: 56,
+    backgroundColor: "#000000",
+    borderRadius: 12,
+    flexDirection: 'row',
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 12,
   },
-  securityCodeButton: {
-    backgroundColor: "#34C759",
-  },
-  verifyButton: {
-    backgroundColor: "#FF9500",
-  },
-  buttonDisabled: {
+  passkeyButtonDisabled: {
     backgroundColor: "#ccc",
   },
-  loginButtonText: {
+  passkeyButtonText: {
     color: "#fff",
     fontSize: 16,
     fontWeight: "600",
-    marginLeft: 8,
   },
-  divider: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginVertical: 24,
+  footer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
   },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: "#e1e1e1",
-  },
-  dividerText: {
-    marginHorizontal: 16,
-    fontSize: 14,
-    color: "#666",
-  },
-  newAccountButton: {
-    height: 56,
-    borderWidth: 1,
-    borderColor: "#e1e1e1",
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  newAccountButtonText: {
-    color: "#666",
+  footerText: {
     fontSize: 16,
+    color: "#666",
+  },
+  footerLink: {
+    fontSize: 16,
+    color: "#007AFF",
     fontWeight: "600",
   },
 });

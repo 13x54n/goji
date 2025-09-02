@@ -107,7 +107,7 @@ router.post('/verify-code', async (req, res) => {
 
     // Generate JWT token for existing users
     let token = null;
-    if (user.hasPasskey || user.hasPassword) {
+    if (user.hasPasskey) {
       token = jwt.sign(
         { userId: user._id, email: user.email },
         process.env.JWT_SECRET || 'your-secret-key',
@@ -124,7 +124,6 @@ router.post('/verify-code', async (req, res) => {
         email: user.email,
         isEmailVerified: user.isEmailVerified,
         hasPasskey: user.hasPasskey,
-        hasPassword: user.hasPassword,
       }
     });
 

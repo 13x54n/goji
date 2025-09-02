@@ -54,11 +54,7 @@ bun run start
 ## API Endpoints
 
 ### Authentication
-- `POST /api/auth/register` - Register a new user
-- `POST /api/auth/login` - Login with password
 - `POST /api/auth/login/passkey` - Login with passkey
-- `POST /api/auth/security-code` - Set 6-digit security code
-- `POST /api/auth/login/security-code` - Login with security code
 - `GET /api/auth/profile` - Get user profile (requires auth)
 
 ### Passkeys
@@ -79,11 +75,9 @@ bun run start
 
 ### User
 - email (unique)
-- password (optional, can be regular password or hashed 6-digit security code)
 - name
 - isEmailVerified
 - hasPasskey
-- hasSecurityCode
 - lastLogin
 - createdAt
 
@@ -126,41 +120,5 @@ curl -X POST http://localhost:4000/api/auth/login/passkey \
   }'
 ```
 
-### Set Security Code
-```bash
-curl -X POST http://localhost:4000/api/auth/security-code \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "user@example.com",
-    "securityCode": "123456"
-  }'
-```
-
-### Login with Security Code
-```bash
-curl -X POST http://localhost:4000/api/auth/login/security-code \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "user@example.com",
-    "securityCode": "123456"
-  }'
-```
-
 ### Send Email Verification Code
-```bash
-curl -X POST http://localhost:4000/api/email/send-code \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "user@example.com"
-  }'
-```
-
-### Verify Email Code
-```bash
-curl -X POST http://localhost:4000/api/email/verify-code \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "user@example.com",
-    "code": "123456"
-  }'
 ```

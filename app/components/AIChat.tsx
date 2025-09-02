@@ -20,7 +20,6 @@ export default function AIChat({}: AIChatProps) {
   const handleSendMessage = () => {
     if (chatMessage.trim()) {
       // TODO: Implement AI chat functionality
-      console.log('Sending message:', chatMessage.trim());
       setChatMessage('');
     }
   };

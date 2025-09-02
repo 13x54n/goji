@@ -54,7 +54,7 @@ export const databaseLogger = async (req: any, res: any, next: any) => {
       console.error('Failed to save log to database:', err);
     });
     
-    // Enhanced terminal console output
+    // Minimal terminal console output without sensitive data
     const timestamp = new Date().toISOString();
     const method = req.method.padEnd(7);
     const status = res.statusCode.toString().padStart(3);
@@ -75,16 +75,8 @@ export const databaseLogger = async (req: any, res: any, next: any) => {
       `\x1b[35m${url}\x1b[0m ` +
       `\x1b[90m(${ip})\x1b[0m`
     );
-    
-    // Show request body for POST/PUT requests
-    if (['POST', 'PUT', 'PATCH'].includes(req.method) && req.body && Object.keys(req.body).length > 0) {
-      console.log(`  \x1b[90mBody:\x1b[0m ${JSON.stringify(req.body, null, 2)}`);
-    }
-    
-    // Show error details for 4xx/5xx responses
-    if (res.statusCode >= 400) {
-      console.log(`  \x1b[31mError:\x1b[0m ${typeof data === 'string' ? data : JSON.stringify(data)}`);
-    }
+
+    // Do not print request bodies or error payloads to console
     
     // Call original send method
     return originalSend.call(this, data);

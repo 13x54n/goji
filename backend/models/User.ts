@@ -7,8 +7,6 @@ export interface IUser extends Document {
   createdAt: Date;
   lastLogin?: Date;
   hasPasskey: boolean;
-  hasPassword: boolean;
-  password?: string;
 }
 
 const userSchema = new Schema<IUser>({
@@ -37,14 +35,6 @@ const userSchema = new Schema<IUser>({
   hasPasskey: {
     type: Boolean,
     default: false,
-  },
-  hasPassword: {
-    type: Boolean,
-    default: false,
-  },
-  password: {
-    type: String,
-    // Hashed password for authentication
   },
 });
 

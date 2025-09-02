@@ -3,15 +3,15 @@ import { router, useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useRef, useState } from "react";
 import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Alert,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { API_ENDPOINTS } from '../config/api';
 import { sessionService } from '../lib/sessionService';
@@ -93,11 +93,10 @@ export default function VerifyScreen() {
       }
 
       const result = await response.json();
-      console.log('Email verified successfully:', result);
-      
+
       // Check if user already has authentication set up
-      if (result.user.hasPasskey || result.user.hasPassword) {
-        // User already exists with authentication, log them in directly
+      if (result.user.hasPasskey) {
+        // User already exists with passkey, log them in directly
         try {
           // Create session for existing user
           await sessionService.createSession({
@@ -105,18 +104,13 @@ export default function VerifyScreen() {
             email: email,
             token: result.token,
             hasPasskey: result.user.hasPasskey,
-            hasPassword: result.user.hasPassword,
           });
           
-          // Navigate directly to home
+          // Navigate to home page
           router.replace("/home");
         } catch (sessionError) {
           console.error('Error creating session:', sessionError);
-          // Fallback to biometric setup if session creation fails
-          router.push({
-            pathname: "/biometric-setup",
-            params: { email: email }
-          });
+          Alert.alert("Error", "Failed to create session. Please try again.");
         }
       } else {
         // New user, navigate to biometric setup
@@ -148,8 +142,7 @@ export default function VerifyScreen() {
         throw new Error(errorData.error || 'Failed to resend code');
       }
 
-      const result = await response.json();
-      console.log('Code resent successfully:', result);
+      await response.json();
       Alert.alert("Code Sent", "A new verification code has been sent to your email");
     } catch (error: any) {
       console.error('Error resending code:', error);

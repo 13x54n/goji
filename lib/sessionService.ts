@@ -6,17 +6,16 @@ interface UserSession {
   email: string;
   token: string;
   hasPasskey: boolean;
-  hasPassword: boolean;
   lastActivity: number;
 }
 
-const SESSION_KEY = 'user_session';
+const SESSION_KEY = 'mingopenwebheadquarters_session';
 const INACTIVITY_TIMEOUT = 30 * 60 * 1000; // 30 minutes in milliseconds
 
 class SessionService {
   private session: UserSession | null = null;
   private appStateListener: any = null;
-  private inactivityTimer: NodeJS.Timeout | null = null;
+  private inactivityTimer: ReturnType<typeof setTimeout> | null = null;
 
   // Initialize session service
   async initialize() {
@@ -40,7 +39,6 @@ class SessionService {
         }
       }
     } catch (error) {
-      console.error('Error loading session:', error);
       await this.clearSession();
     }
   }
@@ -51,7 +49,7 @@ class SessionService {
       await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(session));
       this.session = session;
     } catch (error) {
-      console.error('Error saving session:', error);
+      // no-op
     }
   }
 
@@ -85,7 +83,7 @@ class SessionService {
   // Reset inactivity timer
   private resetInactivityTimer(): void {
     if (this.inactivityTimer) {
-      clearTimeout(this.inactivityTimer);
+      clearTimeout(this.inactivityTimer as any);
     }
 
     if (this.session) {
@@ -105,7 +103,6 @@ class SessionService {
 
   // Handle session expiration
   private handleSessionExpired(): void {
-    console.log('Session expired due to inactivity');
     this.clearSession();
     // You can emit an event here to notify the app about session expiration
   }
@@ -116,7 +113,6 @@ class SessionService {
     email: string;
     token: string;
     hasPasskey: boolean;
-    hasPassword: boolean;
   }): Promise<void> {
     const session: UserSession = {
       ...userData,
@@ -138,14 +134,13 @@ class SessionService {
   }
 
   // Get user's authentication methods
-  getAuthMethods(): { hasPasskey: boolean; hasPassword: boolean } {
+  getAuthMethods(): { hasPasskey: boolean } {
     if (!this.session) {
-      return { hasPasskey: false, hasPassword: false };
+      return { hasPasskey: false };
     }
     
     return {
       hasPasskey: this.session.hasPasskey,
-      hasPassword: this.session.hasPassword,
     };
   }
 
@@ -161,11 +156,11 @@ class SessionService {
       this.session = null;
       
       if (this.inactivityTimer) {
-        clearTimeout(this.inactivityTimer);
+        clearTimeout(this.inactivityTimer as any);
         this.inactivityTimer = null;
       }
     } catch (error) {
-      console.error('Error clearing session:', error);
+      // no-op
     }
   }
 
@@ -176,7 +171,7 @@ class SessionService {
     }
     
     if (this.inactivityTimer) {
-      clearTimeout(this.inactivityTimer);
+      clearTimeout(this.inactivityTimer as any);
     }
   }
 }

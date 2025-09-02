@@ -10,7 +10,6 @@
     "test": "bun test"
   },
   "dependencies": {
-    "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
     "dotenv": "^17.2.1",
     "express": "^5.1.0",
@@ -20,7 +19,6 @@
     "nodemailer": "^7.0.5"
   },
   "devDependencies": {
-    "@types/bcryptjs": "^3.0.0",
     "@types/bun": "^1.2.20",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
