@@ -7,6 +7,7 @@ export interface IUser extends Document {
   createdAt: Date;
   lastLogin?: Date;
   hasPasskey: boolean;
+  wallets: mongoose.Types.ObjectId[];
 }
 
 const userSchema = new Schema<IUser>({
@@ -36,6 +37,10 @@ const userSchema = new Schema<IUser>({
     type: Boolean,
     default: false,
   },
+  wallets: [{
+    type: Schema.Types.ObjectId,
+    ref: 'Wallet',
+  }],
 });
 
 // Index for efficient queries
