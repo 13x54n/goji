@@ -37,7 +37,6 @@ const walletSchema = new Schema<IWallet>({
   address: {
     type: String,
     required: true,
-    unique: true,
   },
   blockchain: {
     type: String,
@@ -62,11 +61,5 @@ const walletSchema = new Schema<IWallet>({
     required: true,
   },
 });
-
-// Indexes for efficient queries
-walletSchema.index({ userId: 1 });
-// address index is automatically created by unique: true constraint
-walletSchema.index({ blockchain: 1 });
-walletSchema.index({ state: 1 });
 
 export default mongoose.model<IWallet>('Wallet', walletSchema);

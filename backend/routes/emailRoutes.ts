@@ -146,8 +146,11 @@ router.post('/verify-code', async (req, res) => {
         console.log('Saving SCA wallets:', walletsResponse.data.wallets.length);
         for (const walletData of walletsResponse.data.wallets) {
           try {
-            // Check if wallet already exists
-            const existingWallet = await Wallet.findOne({ address: walletData.address });
+            // Check if wallet already exists for this address and blockchain combination
+            const existingWallet = await Wallet.findOne({ 
+              address: walletData.address, 
+              blockchain: walletData.blockchain 
+            });
             if (existingWallet) {
               console.log('Wallet already exists:', walletData.address, 'for blockchain:', walletData.blockchain);
               user.wallets.push(existingWallet._id as any);
@@ -172,8 +175,11 @@ router.post('/verify-code', async (req, res) => {
           } catch (error: any) {
             if (error.code === 11000) {
               // Duplicate key error - wallet already exists
-              console.log('Wallet already exists (duplicate key):', walletData.address);
-              const existingWallet = await Wallet.findOne({ address: walletData.address });
+              console.log('Wallet already exists (duplicate key):', walletData.address, 'for blockchain:', walletData.blockchain);
+              const existingWallet = await Wallet.findOne({ 
+                address: walletData.address, 
+                blockchain: walletData.blockchain 
+              });
               if (existingWallet) {
                 user.wallets.push(existingWallet._id as any);
               }
@@ -190,8 +196,11 @@ router.post('/verify-code', async (req, res) => {
         console.log('Saving Solana wallets:', solanaResponse.data.wallets.length);
         for (const walletData of solanaResponse.data.wallets) {
           try {
-            // Check if wallet already exists
-            const existingWallet = await Wallet.findOne({ address: walletData.address });
+            // Check if wallet already exists for this address and blockchain combination
+            const existingWallet = await Wallet.findOne({ 
+              address: walletData.address, 
+              blockchain: walletData.blockchain 
+            });
             if (existingWallet) {
               console.log('Wallet already exists:', walletData.address, 'for blockchain:', walletData.blockchain);
               user.wallets.push(existingWallet._id as any);
@@ -216,8 +225,11 @@ router.post('/verify-code', async (req, res) => {
           } catch (error: any) {
             if (error.code === 11000) {
               // Duplicate key error - wallet already exists
-              console.log('Wallet already exists (duplicate key):', walletData.address);
-              const existingWallet = await Wallet.findOne({ address: walletData.address });
+              console.log('Wallet already exists (duplicate key):', walletData.address, 'for blockchain:', walletData.blockchain);
+              const existingWallet = await Wallet.findOne({ 
+                address: walletData.address, 
+                blockchain: walletData.blockchain 
+              });
               if (existingWallet) {
                 user.wallets.push(existingWallet._id as any);
               }

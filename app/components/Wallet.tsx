@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
   Alert,
@@ -28,6 +29,7 @@ interface CryptoAsset {
 }
 
 export default function Wallet({ }: WalletProps) {
+  const router = useRouter();
   const [isBalanceVisible, setIsBalanceVisible] = useState(true);
   const [activeTab, setActiveTab] = useState<'crypto' | 'cash'>('crypto');
 
@@ -39,8 +41,8 @@ export default function Wallet({ }: WalletProps) {
     Alert.alert('Deposit', 'Deposit functionality will be implemented here');
   };
 
-  const handleWithdraw = () => {
-    Alert.alert('Withdraw', 'Withdraw functionality will be implemented here');
+  const handleReceive = () => {
+    router.push('/receive-crypto');
   };
 
   const handleTransfer = () => {
@@ -155,7 +157,7 @@ export default function Wallet({ }: WalletProps) {
             <Text style={styles.actionButtonText}>Send</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.actionButton} onPress={handleWithdraw}>
+          <TouchableOpacity style={styles.actionButton} onPress={handleReceive}>
             <View style={styles.actionButtonIcon}>
               <Ionicons name="arrow-down" size={20} color="#fff" />
             </View>

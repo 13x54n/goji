@@ -7,6 +7,7 @@ import authRoutes from './routes/authRoutes';
 import emailRoutes from './routes/emailRoutes';
 import logRoutes from './routes/logRoutes';
 import passkeyRoutes from './routes/passkeyRoutes';
+import walletRoutes from './routes/walletRoutes';
 
 dotenv.config();
 
@@ -48,6 +49,7 @@ app.use('/api/passkeys', passkeyRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/email', emailRoutes);
 app.use('/api/logs', logRoutes);
+app.use('/api/wallets', walletRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
