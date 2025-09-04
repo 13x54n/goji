@@ -2,8 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Share, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import QRCode from 'react-native-qrcode-svg';
-
+// @ts-ignore - expo-barcode-generator doesn't have TypeScript declarations
+import { Barcode } from 'expo-barcode-generator';
 interface WalletInfo {
   id: string;
   address: string;
@@ -26,7 +26,7 @@ export default function ReceiveQR() {
 
   const fetchWalletAddress = async (blockchainParam: string) => {
     try {
-      const response = await fetch(`http://10.0.0.82:4000/api/wallets/address/${blockchainParam}`, {
+      const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/wallets/address/${blockchainParam}`, {
         headers: {
           'Content-Type': 'application/json',
         },
@@ -149,14 +149,29 @@ export default function ReceiveQR() {
 
         <View style={styles.qrContainer}>
           <View style={styles.qrWrapper}>
-            <QRCode
-              value={walletInfo.address}
-              size={250}
-              color="#000000"
-              backgroundColor="#FFFFFF"
-            />
+            {walletInfo?.address ? (
+              <Barcode
+                value={walletInfo.address}
+                options={{ 
+                  format: 'QR_CODE', 
+                  background: '#FFFFFF',
+                  foreground: '#000000',
+                  width: 250,
+                  height: 250
+                }}
+              />
+            ) : (
+              <View style={styles.qrPlaceholder}>
+                <Text style={styles.qrPlaceholderText}>No address available</Text>
+              </View>
+            )}
           </View>
           <Text style={styles.qrLabel}>Scan QR code to send crypto</Text>
+          {__DEV__ && (
+            <Text style={styles.debugText}>
+              Debug: Address = {walletInfo?.address || 'No address'}
+            </Text>
+          )}
         </View>
 
         <View style={styles.addressContainer}>
@@ -174,7 +189,7 @@ export default function ReceiveQR() {
         <View style={styles.warningContainer}>
           <Ionicons name="warning" size={20} color="#F59E0B" />
           <Text style={styles.warningText}>
-            Only send {getBlockchainName(blockchain as string)} assets to this address. 
+            Only send {getBlockchainName(blockchain as string)} assets to this address.
             Sending other assets may result in permanent loss.
           </Text>
         </View>
@@ -345,5 +360,25 @@ const styles = StyleSheet.create({
     color: '#92400E',
     marginLeft: 12,
     lineHeight: 20,
+  },
+  qrPlaceholder: {
+    width: 250,
+    height: 250,
+    backgroundColor: '#F3F4F6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 8,
+  },
+  qrPlaceholderText: {
+    fontSize: 16,
+    color: '#6B7280',
+    textAlign: 'center',
+  },
+  debugText: {
+    fontSize: 12,
+    color: '#EF4444',
+    textAlign: 'center',
+    marginTop: 8,
+    fontFamily: 'monospace',
   },
 });

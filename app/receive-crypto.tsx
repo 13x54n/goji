@@ -24,7 +24,7 @@ export default function ReceiveCrypto() {
 
   const fetchBlockchains = async () => {
     try {
-      const response = await fetch('http://10.0.0.82:4000/api/wallets/blockchains', {
+      const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/wallets/blockchains`, {
         headers: {
           'Content-Type': 'application/json',
         },

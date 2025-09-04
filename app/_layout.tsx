@@ -14,7 +14,6 @@ export default function RootLayout() {
       <Stack.Screen name="verify" options={{ headerShown: false }} />
       <Stack.Screen name="biometric-setup" options={{ headerShown: false }} />
       <Stack.Screen name="home" options={{ headerShown: false, gestureEnabled: false }} />
-      <Stack.Screen name="quick-login" options={{ headerShown: false }} />
       <Stack.Screen 
         name="search" 
         options={{ 

@@ -257,7 +257,7 @@ const styles = StyleSheet.create({
   logoContainer: {
     alignItems: "center",
     marginBottom: 18,
-    backgroundColor: "red",
+    backgroundColor: "#000",
     width: 80,
     height: 80,
     aspectRatio: 1,
