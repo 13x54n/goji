@@ -1,10 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
   Alert,
   Image,
+  ImageBackground,
   ScrollView,
   StyleSheet,
   Text,
@@ -42,7 +42,14 @@ export default function Wallet({ }: WalletProps) {
   };
 
   const handleReceive = () => {
-    router.push('/receive-crypto');
+    router.push({
+      pathname: '/receive-qr',
+      params: { blockchain: 'ETH-SEPOLIA' }
+    });
+  };
+
+  const handleSend = () => {
+    router.push('/send');
   };
 
   const handleTransfer = () => {
@@ -120,12 +127,13 @@ export default function Wallet({ }: WalletProps) {
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* Main Balance Card */}
-      <LinearGradient
-        colors={['#4a5568', '#2d3748', '#1a202c']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
+      <ImageBackground
+        source={{ uri: 'https://images.unsplash.com/photo-1635776062360-af423602aff3?q=80&w=3132&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D' }}
         style={styles.balanceCard}
+        imageStyle={styles.backgroundImage}
       >
+        {/* Dark overlay */}
+        <View style={styles.overlay}>
         <View style={styles.balanceHeader}>
           <Text style={styles.balanceLabel}>Total value</Text>
           <TouchableOpacity style={styles.eyeButton} onPress={toggleBalanceVisibility}>
@@ -150,7 +158,7 @@ export default function Wallet({ }: WalletProps) {
 
         {/* Action Buttons */}
         <View style={styles.actionButtons}>
-          <TouchableOpacity style={styles.actionButton} onPress={handleDeposit}>
+          <TouchableOpacity style={styles.actionButton} onPress={handleSend}>
             <View style={styles.actionButtonIcon}>
               <Ionicons name="arrow-up" size={20} color="#fff" />
             </View>
@@ -178,7 +186,8 @@ export default function Wallet({ }: WalletProps) {
             <Text style={styles.actionButtonText}>Buy</Text>
           </TouchableOpacity>
         </View>
-      </LinearGradient>
+        </View>
+      </ImageBackground>
 
       {/* Crypto/Cash Tabs */}
       <View style={styles.tabsContainer}>
@@ -215,16 +224,26 @@ export default function Wallet({ }: WalletProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#000000',
     padding: 16,
   },
   balanceCard: {
     borderRadius: 16,
     padding: 20,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 4,
+    overflow: 'hidden',
+  },
+  backgroundImage: {
+    borderRadius: 16
+  },
+  overlay: {
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    borderRadius: 16,
+    padding: 20,
+    margin: -20,
   },
   balanceHeader: {
     flexDirection: 'row',
@@ -234,7 +253,7 @@ const styles = StyleSheet.create({
   },
   balanceLabel: {
     fontSize: 14,
-    color: '#a0aec0',
+    color: '#CCCCCC',
   },
   eyeButton: {
     padding: 8,
@@ -293,7 +312,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
     marginBottom: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#e1e1e1',
+    borderBottomColor: '#333333',
   },
   tab: {
     paddingVertical: 12,
@@ -303,15 +322,15 @@ const styles = StyleSheet.create({
   },
   activeTab: {
     borderBottomWidth: 2,
-    borderBottomColor: 'blue-500',
+    borderBottomColor: '#fff',
   },
   tabText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#666',
+    color: '#CCCCCC',
   },
   activeTabText: {
-    color: '#000',
+    color: '#FFFFFF',
     fontWeight: '600',
   },
   assetsContainer: {
@@ -320,8 +339,6 @@ const styles = StyleSheet.create({
   cryptoItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
     padding: 16,
     paddingVertical: 12,
     marginBottom: 10,
@@ -330,7 +347,7 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
     borderRadius: 20,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#333333',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 16,
@@ -345,12 +362,12 @@ const styles = StyleSheet.create({
   cryptoName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#000',
+    color: '#FFFFFF',
     marginBottom: 2,
   },
   cryptoAmount: {
     fontSize: 14,
-    color: '#666',
+    color: '#CCCCCC',
   },
   cryptoValue: {
     alignItems: 'flex-end',
@@ -358,7 +375,7 @@ const styles = StyleSheet.create({
   cryptoValueText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#000',
+    color: '#FFFFFF',
     marginBottom: 2,
   },
   cryptoChange: {

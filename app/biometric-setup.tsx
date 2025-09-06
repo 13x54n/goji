@@ -6,13 +6,13 @@ import { StatusBar } from "expo-status-bar";
 import React, { useState } from "react";
 import {
   Alert,
-  Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
   View
 } from "react-native";
 import { API_ENDPOINTS } from '../config/api';
+import { getDeviceInfo } from '../lib/deviceUtils';
 import { sessionService } from '../lib/sessionService';
 
 export default function BiometricSetupScreen() {
@@ -56,13 +56,14 @@ export default function BiometricSetupScreen() {
           { encoding: Crypto.CryptoEncoding.HEX }
         );
 
+        // Get device info with persistent device ID
+        const deviceInfo = await getDeviceInfo();
+
         const passkeyData = {
           email: email,
           credentialId: credentialId,
           createdAt: new Date().toISOString(),
-          deviceInfo: {
-            platform: Platform.OS,
-          }
+          deviceInfo: deviceInfo
         };
 
         try {
@@ -81,13 +82,19 @@ export default function BiometricSetupScreen() {
           const result = await response.json();
 
           await sessionService.createSession({
-            userId: result.id,
+            userId: result.user.id,
             email: email,
             token: result.token || '',
             hasPasskey: true,
+            credentialId: result.passkey.credentialId,
           });
 
-          router.replace("/home");
+          // Show success message
+          Alert.alert(
+            "Passkey Created",
+            "Your passkey has been set up successfully. You can now use biometric authentication to sign in quickly.",
+            [{ text: "Continue", onPress: () => router.replace("/home") }]
+          );
         } catch (error) {
           console.error('Error creating passkey on server:', error);
           Alert.alert("Error", "Failed to create passkey on server. Please try again.");
@@ -139,7 +146,7 @@ export default function BiometricSetupScreen() {
       <View style={styles.content}>
         <View style={styles.illustrationContainer}>
           <View style={styles.illustration}>
-            <Ionicons name="finger-print" size={80} color="#000" />
+            <Ionicons name="finger-print" size={80} color="#ffffff" />
           </View>
         </View>
 
@@ -161,7 +168,7 @@ export default function BiometricSetupScreen() {
             disabled={isLoading}
             activeOpacity={0.8}
           >
-            <Ionicons name="finger-print" size={24} color="#fff" />
+            <Ionicons name="finger-print" size={24} color="#000000" />
             <Text style={styles.enableButtonText}>
               {isLoading ? 'Setting Up...' : 'Enable Passkey'}
             </Text>
@@ -189,7 +196,7 @@ export default function BiometricSetupScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: "#000000",
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -208,7 +215,7 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: '#0001',
+    backgroundColor: '#1a1a1a',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -218,14 +225,14 @@ const styles = StyleSheet.create({
   },
   description: {
     fontSize: 16,
-    color: "#666",
+    color: "#cccccc",
     textAlign: 'center',
     lineHeight: 24,
     marginTop: 8,
   },
   emailText: {
     fontSize: 14,
-    color: "#999",
+    color: "#2ecc71",
     textAlign: 'center',
     marginTop: 16,
     fontStyle: 'italic',
@@ -235,7 +242,7 @@ const styles = StyleSheet.create({
   },
   enableButton: {
     height: 56,
-    backgroundColor: "#000",
+    backgroundColor: "#ffffff",
     borderRadius: 12,
     flexDirection: 'row',
     justifyContent: "center",
@@ -244,10 +251,10 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   enableButtonDisabled: {
-    backgroundColor: "#ccc",
+    backgroundColor: "#666666",
   },
   enableButtonText: {
-    color: "#fff",
+    color: "#000000",
     fontSize: 16,
     fontWeight: "600",
   },
@@ -257,7 +264,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   skipButtonText: {
-    color: "#666",
+    color: "#cccccc",
     fontSize: 16,
     fontWeight: "500",
   },
@@ -266,7 +273,7 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 14,
-    color: "#999",
+    color: "#999999",
     textAlign: 'center',
     lineHeight: 20,
   },

@@ -23,16 +23,17 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: '#000000',
   },
   tabTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#FFFFFF',
     marginBottom: 16,
   },
   comingSoon: {
     fontSize: 16,
-    color: '#666',
+    color: '#CCCCCC',
     textAlign: 'center',
   },
 });

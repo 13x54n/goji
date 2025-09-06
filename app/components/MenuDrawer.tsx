@@ -2,14 +2,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React from 'react';
 import {
-  Animated,
-  Dimensions,
-  Modal,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  TouchableWithoutFeedback,
-  View
+    Animated,
+    Dimensions,
+    Modal,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    TouchableWithoutFeedback,
+    View
 } from 'react-native';
 import { sessionService } from '../../lib/sessionService';
 
@@ -116,7 +116,7 @@ export default function MenuDrawer({ visible, onClose }: MenuDrawerProps) {
                 {!!userEmail && <Text style={styles.userEmail}>{userEmail.split('@')[0]}</Text>}
                 <Text style={styles.userName}>Account & settings</Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color="#ccc" />
+              <Ionicons name="chevron-forward" size={20} color="#cccccc" />
             </TouchableOpacity>
           </View>
 
@@ -130,7 +130,7 @@ export default function MenuDrawer({ visible, onClose }: MenuDrawerProps) {
               >
                 <View style={styles.menuItemContent}>
                   <View style={styles.menuItemIcon}>
-                    <Ionicons name={item.icon as any} size={24} color="#333" />
+                    <Ionicons name={item.icon as any} size={24} color="#ffffff" />
                   </View>
                   <Text style={styles.menuItemText}>{item.title}</Text>
                 </View>
@@ -154,15 +154,15 @@ const styles = StyleSheet.create({
   },
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
   },
   drawer: {
     width: screenWidth * 0.8,
     height: '100%',
-    backgroundColor: '#ffffff',
+    backgroundColor: '#1a1a1a',
     shadowColor: '#000',
     shadowOffset: { width: -2, height: 0 },
-    shadowOpacity: 0.25,
+    shadowOpacity: 0.5,
     shadowRadius: 10,
     elevation: 10,
   },
@@ -174,7 +174,7 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
     paddingTop: 60,
     borderBottomWidth: 1,
-    borderBottomColor: '#e1e1e1',
+    borderBottomColor: '#333333',
   },
   userInfo: {
     flexDirection: 'row',
@@ -185,7 +185,7 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: '#000',
+    backgroundColor: '#007AFF',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -195,13 +195,13 @@ const styles = StyleSheet.create({
   },
   userName: {
     fontSize: 14,
-    color: '#666',
+    color: '#CCCCCC',
     marginBottom: 2,
   },
   userEmail: {
     fontWeight: '600',
     fontSize: 16,
-    color: '#333',
+    color: '#FFFFFF',
   },
   closeButton: {
     padding: 8,
@@ -231,7 +231,7 @@ const styles = StyleSheet.create({
   },
   menuItemText: {
     fontSize: 16,
-    color: '#333',
+    color: '#FFFFFF',
     fontWeight: '500',
   },
 });

@@ -3,15 +3,14 @@ import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
 import {
-    Alert,
-    BackHandler,
-    KeyboardAvoidingView,
-    Platform,
-    SafeAreaView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  BackHandler,
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import { sessionService } from '../lib/sessionService';
 import AIChat from './components/AIChat';
@@ -93,21 +92,21 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar style="dark" backgroundColor="#ffffff" />
+      <StatusBar style="dark" backgroundColor="#000000" />
 
       {/* Top Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.headerButton} onPress={handleMenuPress}>
-          <Ionicons name="menu" size={24} color="#000" />
+          <Ionicons name="menu" size={24} color="#ffffff" />
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.searchButton} onPress={handleSearchPress}>
-          <Ionicons name="search" size={20} color="#666" />
+          <Ionicons name="search" size={20} color="#cccccc" />
           <Text style={styles.searchPlaceholder}>Search...</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.headerButton} onPress={handleNotificationPress}>
-          <Ionicons name="notifications-outline" size={24} color="#000" />
+          <Ionicons name="notifications-outline" size={24} color="#ffffff" />
         </TouchableOpacity>
       </View>
 
@@ -134,7 +133,7 @@ export default function HomeScreen() {
             <Ionicons
               name={activeTab === tab.id ? tab.activeIcon : tab.icon}
               size={24}
-              color={activeTab === tab.id ? '#000' : '#999'}
+              color={activeTab === tab.id ? '#ffffff' : '#cccccc'}
             />
             <Text
               style={[
@@ -160,11 +159,11 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#000000',
   },
   safeArea: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#000000',
   },
   header: {
     flexDirection: 'row',
@@ -172,7 +171,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#000',
     elevation: 5,
   },
   headerButton: {
@@ -181,16 +180,16 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#000',
+    color: '#FFFFFF',
   },
   content: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#000000',
   },
 
   bottomTabs: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
+    backgroundColor: '#000',
     paddingBottom: 0,
     paddingTop: 8,
     elevation: 5,
@@ -203,11 +202,11 @@ const styles = StyleSheet.create({
   },
   tabText: {
     fontSize: 12,
-    color: '#000',
+    color: '#CCCCCC',
     marginTop: 4,
   },
   activeTabText: {
-    color: '#000',
+    color: '#FFFFFF',
     fontWeight: '600',
   },
   walletHeader: {
@@ -225,12 +224,12 @@ const styles = StyleSheet.create({
   accountName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1a1a1a',
+    color: '#FFFFFF',
     marginBottom: 2,
   },
   walletAddress: {
     fontSize: 12,
-    color: '#666',
+    color: '#CCCCCC',
   },
   headerActions: {
     flexDirection: 'row',
@@ -243,7 +242,7 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#333333',
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 12,
@@ -251,7 +250,7 @@ const styles = StyleSheet.create({
   },
   searchPlaceholder: {
     marginLeft: 8,
-    color: '#999',
+    color: '#CCCCCC',
     fontSize: 14,
   },
 });

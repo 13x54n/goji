@@ -77,7 +77,7 @@ export default function SearchScreen() {
     if (searchResults.length === 0) {
       return (
         <View style={styles.emptyStateContainer}>
-          <Ionicons name="search" size={64} color="#ccc" />
+          <Ionicons name="search" size={64} color="#cccccc" />
           <Text style={styles.emptyStateTitle}>Search Goji</Text>
           <Text style={styles.emptyStateSubtitle}>
             Find transactions, portfolio data, settings, and more
@@ -101,7 +101,7 @@ export default function SearchScreen() {
               <Text style={styles.resultTitle}>{result.title}</Text>
               <Text style={styles.resultSubtitle}>{result.subtitle}</Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color="#ccc" />
+            <Ionicons name="chevron-forward" size={20} color="#cccccc" />
           </TouchableOpacity>
         ))}
       </ScrollView>
@@ -110,12 +110,12 @@ export default function SearchScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar style="dark" backgroundColor="#ffffff" />
+      <StatusBar style="light" backgroundColor="#000000" />
       
       {/* Search Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-          <Ionicons name="arrow-back" size={24} color="#000" />
+          <Ionicons name="arrow-back" size={24} color="#ffffff" />
         </TouchableOpacity>
         
         <View style={styles.searchContainer}>
@@ -123,7 +123,7 @@ export default function SearchScreen() {
             ref={searchInputRef}
             style={styles.searchInput}
             placeholder="Search..."
-            placeholderTextColor="#999"
+            placeholderTextColor="#cccccc"
             value={searchQuery}
             onChangeText={handleSearch}
             returnKeyType="search"
@@ -139,7 +139,7 @@ export default function SearchScreen() {
                 searchInputRef.current?.focus();
               }}
             >
-              <Ionicons name="close-circle" size={20} color="#999" />
+              <Ionicons name="close-circle" size={20} color="#cccccc" />
             </TouchableOpacity>
           )}
         </View>
@@ -160,16 +160,16 @@ export default function SearchScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#000000',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#1a1a1a',
     borderBottomWidth: 1,
-    borderBottomColor: '#e1e1e1',
+    borderBottomColor: '#333333',
   },
   backButton: {
     padding: 8,
@@ -179,7 +179,7 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#333333',
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 8,
@@ -187,7 +187,7 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 16,
-    color: '#333',
+    color: '#ffffff',
     paddingVertical: 4,
   },
   clearButton: {
@@ -196,7 +196,7 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#000000',
   },
   loadingContainer: {
     flex: 1,
@@ -205,7 +205,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 16,
-    color: '#666',
+    color: '#cccccc',
   },
   noResultsContainer: {
     flex: 1,
@@ -215,7 +215,7 @@ const styles = StyleSheet.create({
   },
   noResultsText: {
     fontSize: 16,
-    color: '#666',
+    color: '#cccccc',
     textAlign: 'center',
   },
   emptyStateContainer: {
@@ -227,13 +227,13 @@ const styles = StyleSheet.create({
   emptyStateTitle: {
     fontSize: 24,
     fontWeight: '600',
-    color: '#333',
+    color: '#ffffff',
     marginTop: 16,
     marginBottom: 8,
   },
   emptyStateSubtitle: {
     fontSize: 16,
-    color: '#666',
+    color: '#cccccc',
     textAlign: 'center',
     lineHeight: 22,
   },
@@ -245,13 +245,13 @@ const styles = StyleSheet.create({
   resultItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: '#1a1a1a',
     borderRadius: 12,
     padding: 16,
     marginBottom: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.3,
     shadowRadius: 2,
     elevation: 2,
   },
@@ -259,7 +259,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#333333',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -273,11 +273,11 @@ const styles = StyleSheet.create({
   resultTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
+    color: '#ffffff',
     marginBottom: 2,
   },
   resultSubtitle: {
     fontSize: 14,
-    color: '#666',
+    color: '#cccccc',
   },
 });

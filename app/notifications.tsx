@@ -155,12 +155,12 @@ export default function NotificationsScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar style="dark" backgroundColor="#ffffff" />
+      <StatusBar style="light" backgroundColor="#000000" />
       
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-          <Ionicons name="arrow-back" size={24} color="#000" />
+          <Ionicons name="arrow-back" size={24} color="#ffffff" />
         </TouchableOpacity>
         
         <Text style={styles.headerTitle}>Notifications</Text>
@@ -188,16 +188,16 @@ export default function NotificationsScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#000000',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#1a1a1a',
     borderBottomWidth: 1,
-    borderBottomColor: '#e1e1e1',
+    borderBottomColor: '#333333',
   },
   backButton: {
     padding: 8,
@@ -207,38 +207,38 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 18,
     fontWeight: '600',
-    color: '#000',
+    color: '#ffffff',
   },
   markAllButton: {
     padding: 8,
   },
   markAllText: {
     fontSize: 14,
-    color: '#007AFF',
+    color: '#2ecc71',
     fontWeight: '500',
   },
   list: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#000000',
   },
   listContent: {
     paddingVertical: 8,
   },
   notificationItem: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#1a1a1a',
     marginHorizontal: 16,
     marginVertical: 4,
     borderRadius: 12,
     padding: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.3,
     shadowRadius: 2,
     elevation: 2,
   },
   unreadNotification: {
     borderLeftWidth: 3,
-    borderLeftColor: '#007AFF',
+    borderLeftColor: '#2ecc71',
   },
   notificationContent: {
     flexDirection: 'row',
@@ -263,7 +263,7 @@ const styles = StyleSheet.create({
   notificationTitle: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#333',
+    color: '#ffffff',
     flex: 1,
   },
   unreadTitle: {
@@ -273,17 +273,17 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#2ecc71',
     marginLeft: 8,
   },
   notificationMessage: {
     fontSize: 14,
-    color: '#666',
+    color: '#cccccc',
     lineHeight: 20,
     marginBottom: 4,
   },
   notificationTime: {
     fontSize: 12,
-    color: '#999',
+    color: '#999999',
   },
 });

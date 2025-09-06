@@ -92,7 +92,7 @@ export default function AIChat({}: AIChatProps) {
 const styles = StyleSheet.create({
   chatContainer: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#000000',
     justifyContent: 'space-between',
   },
   messagesContainer: {
@@ -106,15 +106,17 @@ const styles = StyleSheet.create({
   aiMessage: {
     alignSelf: 'flex-start',
     maxWidth: '80%',
-    backgroundColor: '#fff',
+    backgroundColor: '#1a1a1a',
     padding: 12,
     borderRadius: 18,
     borderBottomLeftRadius: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.3,
     shadowRadius: 2,
     elevation: 2,
+    borderWidth: 1,
+    borderColor: '#333333',
   },
   userMessage: {
     alignSelf: 'flex-end',
@@ -126,7 +128,7 @@ const styles = StyleSheet.create({
   },
   messageText: {
     fontSize: 14,
-    color: '#333',
+    color: '#FFFFFF',
     lineHeight: 20,
   },
   userMessageText: {
@@ -136,21 +138,21 @@ const styles = StyleSheet.create({
   },
   messageTime: {
     fontSize: 11,
-    color: '#999',
+    color: '#CCCCCC',
     marginTop: 4,
     alignSelf: 'flex-end',
   },
   chatInputContainer: {
     padding: 16,
     paddingBottom: Platform.OS === 'ios' ? 20 : 16,
-    backgroundColor: '#fff',
+    backgroundColor: '#1a1a1a',
     borderTopWidth: 1,
-    borderTopColor: '#e1e5e9',
+    borderTopColor: '#333333',
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#333333',
     borderRadius: 24,
     paddingHorizontal: 16,
     paddingVertical: 8,
@@ -158,7 +160,7 @@ const styles = StyleSheet.create({
   chatInput: {
     flex: 1,
     fontSize: 14,
-    color: '#333',
+    color: '#FFFFFF',
     maxHeight: 100,
     paddingVertical: 8,
   },
@@ -172,6 +174,6 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   sendButtonDisabled: {
-    backgroundColor: '#ccc',
+    backgroundColor: '#333333',
   },
 });

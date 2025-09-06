@@ -8,6 +8,7 @@ export interface IWallet extends Document {
   address: string;
   blockchain: string;
   accountType: 'SCA' | 'EOA';
+  qrCodeUrl?: string;
   updateDate: Date;
   createDate: Date;
   userId: mongoose.Types.ObjectId;
@@ -46,6 +47,10 @@ const walletSchema = new Schema<IWallet>({
     type: String,
     enum: ['SCA', 'EOA'],
     required: true,
+  },
+  qrCodeUrl: {
+    type: String,
+    required: false,
   },
   updateDate: {
     type: Date,

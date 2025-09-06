@@ -6,6 +6,7 @@ interface UserSession {
   email: string;
   token: string;
   hasPasskey: boolean;
+  credentialId?: string; // Store the passkey credential ID
   lastActivity: number;
 }
 
@@ -113,6 +114,7 @@ class SessionService {
     email: string;
     token: string;
     hasPasskey: boolean;
+    credentialId?: string;
   }): Promise<void> {
     const session: UserSession = {
       ...userData,

@@ -15,13 +15,37 @@ router.post('/create', async (req, res) => {
       });
     }
 
-    // Check if passkey already exists
+    // Check if passkey already exists for this credential ID
     const existingPasskey = await Passkey.findOne({ credentialId });
     if (existingPasskey) {
       return res.status(409).json({ error: 'Passkey already exists' });
     }
 
-    // Create or update user
+    // Deactivate any existing passkeys for this device (same deviceInfo)
+    await Passkey.updateMany(
+      { 
+        'deviceInfo.platform': deviceInfo.platform,
+        'deviceInfo.deviceId': deviceInfo.deviceId,
+        isActive: true 
+      },
+      { isActive: false }
+    );
+
+    // Update previous users to remove passkey status
+    const previousPasskeys = await Passkey.find({
+      'deviceInfo.platform': deviceInfo.platform,
+      'deviceInfo.deviceId': deviceInfo.deviceId,
+      isActive: false
+    });
+
+    for (const prevPasskey of previousPasskeys) {
+      await User.findOneAndUpdate(
+        { email: prevPasskey.email },
+        { hasPasskey: false }
+      );
+    }
+
+    // Create or update user for new email
     let user = await User.findOne({ email });
     if (!user) {
       user = new User({ 
@@ -34,7 +58,7 @@ router.post('/create', async (req, res) => {
     }
     await user.save();
 
-    // Create passkey
+    // Create new passkey
     const passkey = new Passkey({
       email,
       credentialId,
@@ -47,13 +71,21 @@ router.post('/create', async (req, res) => {
     res.status(201).json({
       success: true,
       message: 'Passkey created successfully',
+      user: {
+        id: user._id,
+        email: user.email,
+        hasPasskey: user.hasPasskey,
+        isEmailVerified: user.isEmailVerified,
+        createdAt: user.createdAt,
+      },
       passkey: {
         id: passkey._id,
         email: passkey.email,
         credentialId: passkey.credentialId,
         createdAt: passkey.createdAt,
         deviceInfo: passkey.deviceInfo,
-      }
+      },
+      token: `passkey_${passkey._id}_${Date.now()}`, // Simple token for demo
     });
 
   } catch (error) {
@@ -90,13 +122,21 @@ router.post('/verify', async (req, res) => {
       { lastLogin: new Date() }
     );
 
+    // Get user details
+    const user = await User.findOne({ email: passkey.email });
+    
     res.json({
       success: true,
       message: 'Passkey verified successfully',
       user: {
+        id: user?._id,
         email: passkey.email,
+        hasPasskey: user?.hasPasskey || false,
+        isEmailVerified: user?.isEmailVerified || false,
         lastLogin: new Date(),
-      }
+        createdAt: user?.createdAt,
+      },
+      token: `passkey_${passkey._id}_${Date.now()}`, // Simple token for demo
     });
 
   } catch (error) {

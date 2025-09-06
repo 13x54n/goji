@@ -1,6 +1,7 @@
 import express from 'express';
 import User from '../models/User';
 import Wallet from '../models/Wallet';
+import { QRCodeService } from '../services/qrCodeService';
 
 const router = express.Router();
 
@@ -54,6 +55,20 @@ router.get('/address/:blockchain', async (req, res) => {
       });
     }
 
+    // Generate QR code URL if not exists or if it contains localhost
+    let qrCodeUrl = wallet.qrCodeUrl;
+    if (!qrCodeUrl || qrCodeUrl.includes('localhost:4000')) {
+      try {
+        qrCodeUrl = await QRCodeService.generateQRCode(wallet.address, wallet.blockchain);
+        // Update wallet with QR code URL
+        await Wallet.findByIdAndUpdate(wallet._id, { qrCodeUrl });
+      } catch (qrError) {
+        console.error('Error generating QR code:', qrError);
+        // Fallback to data URL
+        qrCodeUrl = await QRCodeService.generateQRCodeDataURL(wallet.address);
+      }
+    }
+
     res.json({
       success: true,
       wallet: {
@@ -61,7 +76,8 @@ router.get('/address/:blockchain', async (req, res) => {
         address: wallet.address,
         blockchain: wallet.blockchain,
         accountType: wallet.accountType,
-        state: wallet.state
+        state: wallet.state,
+        qrCodeUrl
       }
     });
 

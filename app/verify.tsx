@@ -3,15 +3,15 @@ import { router, useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useRef, useState } from "react";
 import {
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { API_ENDPOINTS } from '../config/api';
 import { sessionService } from '../lib/sessionService';
@@ -167,7 +167,7 @@ export default function VerifyScreen() {
             onPress={() => router.back()}
             activeOpacity={0.7}
           >
-            <Ionicons name="chevron-back" size={24} color="#5a5a5a" />
+            <Ionicons name="chevron-back" size={24} color="#ffffff" />
             <Text style={styles.backButtonText}>Back</Text>
           </TouchableOpacity>
           <View style={styles.header}>
@@ -231,7 +231,7 @@ export default function VerifyScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: "#000000",
   },
   scrollContent: {
     flexGrow: 1,
@@ -251,7 +251,7 @@ const styles = StyleSheet.create({
   },
   backButtonText: {
     fontSize: 16,
-    color: "#5a5a5a",
+    color: "#ffffff",
     fontWeight: "600",
     marginLeft: 4,
   },
@@ -262,13 +262,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: "700",
-    color: "#1a1a1a",
+    color: "#ffffff",
     marginBottom: 10,
     textAlign: "center",
   },
   subtitle: {
     fontSize: 16,
-    color: "#666",
+    color: "#cccccc",
     textAlign: "center",
     lineHeight: 22
   },
@@ -276,20 +276,20 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#f8f9fa",
+    backgroundColor: "#fff1",
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: 20,
     marginTop: 8,
   },
   emailLabel: {
     fontSize: 14,
-    color: "#666",
+    color: "#cccccc",
     marginRight: 8,
   },
   emailText: {
     fontSize: 14,
-    color: "#007AFF",
+    color: "#2ecc71",
     fontWeight: "600",
   },
 
@@ -305,27 +305,27 @@ const styles = StyleSheet.create({
     width: 48,
     height: 56,
     borderWidth: 2,
-    borderColor: "#e1e1e1",
+    borderColor: "#333333",
     borderRadius: 12,
     fontSize: 24,
     fontWeight: "600",
     textAlign: "center",
-    color: "#1a1a1a",
-    backgroundColor: "#fafafa",
+    color: "#ffffff",
+    backgroundColor: "#1a1a1a",
   },
   verifyButton: {
     height: 56,
-    backgroundColor: "#000000",
+    backgroundColor: "#ffffff",
     borderRadius: 12,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 24,
   },
   verifyButtonDisabled: {
-    backgroundColor: "#ccc",
+    backgroundColor: "#fff9",
   },
   verifyButtonText: {
-    color: "#fff",
+    color: "#000000",
     fontSize: 16,
     fontWeight: "600",
   },
@@ -336,11 +336,11 @@ const styles = StyleSheet.create({
   },
   resendText: {
     fontSize: 14,
-    color: "#666",
+    color: "#cccccc",
   },
   resendLink: {
     fontSize: 14,
-    color: "#007AFF",
+    color: "#2ecc71",
     fontWeight: "600",
   },
 });

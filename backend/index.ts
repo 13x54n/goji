@@ -2,6 +2,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import express from 'express';
 import mongoose from 'mongoose';
+import path from 'path';
 import { databaseLogger, devLogger, errorLogger, prodLogger } from './middleware/logger';
 import authRoutes from './routes/authRoutes';
 import emailRoutes from './routes/emailRoutes';
@@ -43,6 +44,9 @@ mongoose.connect(MONGODB_URI)
   .catch((error) => {
     console.error('MongoDB connection error:', error);
   });
+
+// Static files for QR codes
+app.use('/qr-codes', express.static(path.join(process.cwd(), 'public', 'qr-codes')));
 
 // Routes
 app.use('/api/passkeys', passkeyRoutes);

@@ -40,7 +40,13 @@
           "backgroundColor": "#ffffff"
         }
       ],
-      "expo-local-authentication"
+      "expo-local-authentication",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera to scan QR codes for wallet addresses."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

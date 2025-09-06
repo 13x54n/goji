@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
@@ -136,89 +137,92 @@ export default function ReceiveCrypto() {
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#000" />
-        </TouchableOpacity>
-        <Text style={styles.title}>Select network</Text>
-        <View style={styles.placeholder} />
+    <>
+      <StatusBar style="dark" backgroundColor='#000000'/>
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color="#fff" />
+          </TouchableOpacity>
+          <Text style={styles.title}>Select network</Text>
+          <View style={styles.placeholder} />
+        </View>
+
+        <ScrollView style={styles.content}>
+          {/* Information Box */}
+          <View style={styles.infoBox}>
+            <View style={styles.infoIcon}>
+              <Ionicons name="information-circle" size={20} color="#3B82F6" />
+            </View>
+            <View style={styles.infoContent}>
+              <Text style={styles.infoTitle}>What should I pick?</Text>
+              <Text style={styles.infoText}>Select the network you're using to transfer the asset</Text>
+            </View>
+          </View>
+
+          <View style={styles.blockchainList}>
+            {blockchains.map((blockchain) => (
+              <TouchableOpacity
+                key={blockchain.blockchain}
+                style={[
+                  styles.blockchainItem,
+                  !blockchain.hasWallet && styles.disabledItem
+                ]}
+                onPress={() => blockchain.hasWallet && handleBlockchainSelect(blockchain.blockchain)}
+                disabled={!blockchain.hasWallet}
+              >
+                <View style={styles.blockchainInfo}>
+                  <View style={styles.iconContainer}>
+                    <Image
+                      source={{ uri: getBlockchainImage(blockchain.blockchain) }}
+                      style={styles.blockchainImage}
+                      resizeMode="contain"
+                    />
+                  </View>
+
+                  <View style={styles.blockchainDetails}>
+                    <Text style={[
+                      styles.blockchainName,
+                      !blockchain.hasWallet && styles.disabledText
+                    ]}>
+                      {blockchain.name}
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.rightSection}>
+                  {blockchain.hasWallet ? (
+                    <Text style={styles.estimatedTime}>
+                      {getEstimatedTime(blockchain.blockchain)}
+                    </Text>
+                  ) : (
+                    <Text style={styles.unavailableText}>No Wallet</Text>
+                  )}
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </ScrollView>
       </View>
-
-      <ScrollView style={styles.content}>
-        {/* Information Box */}
-        <View style={styles.infoBox}>
-          <View style={styles.infoIcon}>
-            <Ionicons name="information-circle" size={20} color="#3B82F6" />
-          </View>
-          <View style={styles.infoContent}>
-            <Text style={styles.infoTitle}>What should I pick?</Text>
-            <Text style={styles.infoText}>Select the network you're using to transfer the asset</Text>
-          </View>
-        </View>
-        
-        <View style={styles.blockchainList}>
-          {blockchains.map((blockchain) => (
-            <TouchableOpacity
-              key={blockchain.blockchain}
-              style={[
-                styles.blockchainItem,
-                !blockchain.hasWallet && styles.disabledItem
-              ]}
-              onPress={() => blockchain.hasWallet && handleBlockchainSelect(blockchain.blockchain)}
-              disabled={!blockchain.hasWallet}
-            >
-              <View style={styles.blockchainInfo}>
-                <View style={styles.iconContainer}>
-                  <Image 
-                    source={{ uri: getBlockchainImage(blockchain.blockchain) }}
-                    style={styles.blockchainImage}
-                    resizeMode="contain"
-                  />
-                </View>
-                
-                <View style={styles.blockchainDetails}>
-                  <Text style={[
-                    styles.blockchainName,
-                    !blockchain.hasWallet && styles.disabledText
-                  ]}>
-                    {blockchain.name}
-                  </Text>
-                </View>
-              </View>
-
-              <View style={styles.rightSection}>
-                {blockchain.hasWallet ? (
-                  <Text style={styles.estimatedTime}>
-                    {getEstimatedTime(blockchain.blockchain)}
-                  </Text>
-                ) : (
-                  <Text style={styles.unavailableText}>No Wallet</Text>
-                )}
-              </View>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </ScrollView>
-    </View>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#000000',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#000000',
   },
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#6B7280',
+    color: '#CCCCCC',
   },
   header: {
     flexDirection: 'row',
@@ -227,9 +231,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 60,
     paddingBottom: 20,
-    backgroundColor: 'white',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    backgroundColor: '#000',
   },
   backButton: {
     padding: 8,
@@ -237,7 +239,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#111827',
+    color: '#FFFFFF',
   },
   placeholder: {
     width: 40,
@@ -249,10 +251,10 @@ const styles = StyleSheet.create({
   infoBox: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    backgroundColor: '#F3F4F6',
-    padding: 16,
+    backgroundColor: '#0004',
+    paddingVertical: 16,
     borderRadius: 12,
-    marginTop: 20,
+    marginTop: 10,
   },
   infoIcon: {
     marginRight: 12,
@@ -264,12 +266,12 @@ const styles = StyleSheet.create({
   infoTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#111827',
+    color: '#FFFFFF',
     marginBottom: 4,
   },
   infoText: {
     fontSize: 14,
-    color: '#6B7280',
+    color: '#CCCCCC',
     lineHeight: 20,
   },
   blockchainList: {
@@ -279,9 +281,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: 'white',
     paddingVertical: 20,
-    paddingHorizontal: 16,
+    paddingHorizontal: 16
   },
   disabledItem: {
     opacity: 0.5,
@@ -298,11 +299,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#000',
   },
   blockchainImage: {
     width: 40,
     height: 40,
+    borderRadius: 20,
   },
   blockchainDetails: {
     flex: 1,
@@ -310,7 +312,7 @@ const styles = StyleSheet.create({
   blockchainName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#111827',
+    color: '#FFFFFF',
     marginBottom: 2,
   },
   accountType: {
@@ -319,7 +321,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   disabledText: {
-    color: '#9CA3AF',
+    color: '#666666',
   },
   rightSection: {
     flexDirection: 'row',
@@ -328,7 +330,7 @@ const styles = StyleSheet.create({
   },
   estimatedTime: {
     fontSize: 14,
-    color: '#111827',
+    color: '#FFFFFF',
     fontWeight: '500',
   },
   unavailableText: {
