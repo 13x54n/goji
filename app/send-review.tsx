@@ -6,6 +6,7 @@ import {
     ActivityIndicator,
     Alert,
     Image,
+    ScrollView,
     StyleSheet,
     Text,
     TouchableOpacity,
@@ -64,7 +65,7 @@ export default function SendReview() {
 
   return (
     <>
-      <StatusBar style="light" backgroundColor="#000000" />
+      <StatusBar style="dark" backgroundColor="#000000" />
       <View style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity onPress={handleBack} style={styles.backButton}>
@@ -72,11 +73,15 @@ export default function SendReview() {
           </TouchableOpacity>
           <Text style={styles.title}>Review & Send</Text>
           <TouchableOpacity onPress={handleEdit} style={styles.editButton}>
-            <Ionicons name="create" size={20} color="#10B981" />
+            <Ionicons name="create" size={20} color="#0984e3" />
           </TouchableOpacity>
         </View>
 
-        <View style={styles.content}>
+        <ScrollView 
+          style={styles.content}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 20 }}
+        >
           <View style={styles.previewCard}>
             <View style={styles.section}>
               <Text style={styles.sectionLabel}>To</Text>
@@ -87,8 +92,8 @@ export default function SendReview() {
                   </Text>
                 </View>
                 <View style={styles.contactDetails}>
-                  <Text style={styles.contactName}>{contactName}</Text>
-                  <Text style={styles.contactAddress}>{contactAddress}</Text>
+                  <Text style={styles.contactName} numberOfLines={1}>{contactName}</Text>
+                  <Text style={styles.contactAddress} numberOfLines={1}>{contactAddress}</Text>
                 </View>
               </View>
             </View>
@@ -101,13 +106,13 @@ export default function SendReview() {
                 <View style={styles.amountRow}>
                   <Image source={{ uri: tokenIcon }} style={styles.tokenIcon} />
                   <View style={styles.amountDetails}>
-                    <Text style={styles.amountText}>
+                    <Text style={styles.amountText} numberOfLines={1}>
                       {amount} {tokenSymbol}
                     </Text>
-                    <Text style={styles.tokenName}>{tokenName}</Text>
+                    <Text style={styles.tokenName} numberOfLines={1}>{tokenName}</Text>
                   </View>
                 </View>
-                <Text style={styles.amountUSD}>≈ ${amountUSD}</Text>
+                <Text style={styles.amountUSD} numberOfLines={1}>≈ ${amountUSD}</Text>
               </View>
             </View>
 
@@ -116,8 +121,8 @@ export default function SendReview() {
             <View style={styles.section}>
               <Text style={styles.sectionLabel}>Network Fee</Text>
               <View style={styles.feeInfo}>
-                <Text style={styles.feeAmount}>{gasFee} ETH</Text>
-                <Text style={styles.feeUSD}>≈ $2.50</Text>
+                <Text style={styles.feeAmount} numberOfLines={1}>{gasFee} ETH</Text>
+                <Text style={styles.feeUSD} numberOfLines={1}>≈ $2.50</Text>
               </View>
             </View>
 
@@ -126,10 +131,10 @@ export default function SendReview() {
             <View style={styles.section}>
               <Text style={styles.sectionLabel}>Total</Text>
               <View style={styles.totalInfo}>
-                <Text style={styles.totalAmount}>
+                <Text style={styles.totalAmount} numberOfLines={1}>
                   {totalAmount} {tokenSymbol}
                 </Text>
-                <Text style={styles.totalUSD}>
+                <Text style={styles.totalUSD} numberOfLines={1}>
                   ≈ ${(parseFloat(amountUSD) + 2.50).toFixed(2)}
                 </Text>
               </View>
@@ -153,7 +158,7 @@ export default function SendReview() {
               <Text style={styles.infoValue}>Ethereum Sepolia</Text>
             </View>
           </View>
-        </View>
+        </ScrollView>
 
         <View style={styles.footer}>
           <TouchableOpacity 
@@ -194,7 +199,7 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   title: {
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
   },
@@ -207,14 +212,14 @@ const styles = StyleSheet.create({
   },
   previewCard: {
     backgroundColor: '#1a1a1a',
-    borderRadius: 16,
-    padding: 20,
+    borderRadius: 12,
+    padding: 16,
     marginBottom: 20,
     borderWidth: 1,
     borderColor: '#333333',
   },
   section: {
-    marginBottom: 20,
+    marginBottom: 16,
   },
   sectionLabel: {
     fontSize: 14,
@@ -242,9 +247,10 @@ const styles = StyleSheet.create({
   },
   contactDetails: {
     flex: 1,
+    minWidth: 0,
   },
   contactName: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
     marginBottom: 4,
@@ -256,7 +262,7 @@ const styles = StyleSheet.create({
   divider: {
     height: 1,
     backgroundColor: '#333333',
-    marginVertical: 20,
+    marginVertical: 16,
   },
   amountInfo: {
     flexDirection: 'row',
@@ -266,6 +272,8 @@ const styles = StyleSheet.create({
   amountRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    flex: 1,
+    minWidth: 0,
   },
   tokenIcon: {
     width: 32,
@@ -275,9 +283,10 @@ const styles = StyleSheet.create({
   },
   amountDetails: {
     flex: 1,
+    minWidth: 0,
   },
   amountText: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700',
     color: '#FFFFFF',
     marginBottom: 4,
@@ -289,6 +298,8 @@ const styles = StyleSheet.create({
   amountUSD: {
     fontSize: 16,
     color: '#CCCCCC',
+    flexShrink: 0,
+    marginLeft: 8,
   },
   feeInfo: {
     flexDirection: 'row',
@@ -299,10 +310,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#FFFFFF',
     fontWeight: '600',
+    flex: 1,
+    minWidth: 0,
   },
   feeUSD: {
     fontSize: 14,
     color: '#CCCCCC',
+    flexShrink: 0,
+    marginLeft: 8,
   },
   totalInfo: {
     flexDirection: 'row',
@@ -310,13 +325,17 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   totalAmount: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '700',
-    color: '#10B981',
+    color: '#0984e3',
+    flex: 1,
+    minWidth: 0,
   },
   totalUSD: {
     fontSize: 16,
     color: '#CCCCCC',
+    flexShrink: 0,
+    marginLeft: 8,
   },
   warningCard: {
     flexDirection: 'row',
@@ -357,22 +376,26 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#FFFFFF',
     fontWeight: '600',
+    flex: 1,
+    textAlign: 'right',
   },
   footer: {
     padding: 20,
     paddingBottom: 40,
   },
   sendButton: {
-    backgroundColor: '#10B981',
+    backgroundColor: '#fff',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 16,
-    borderRadius: 12,
+    borderRadius: 14,
     gap: 8,
+    marginHorizontal: 12,
   },
   sendButtonDisabled: {
-    backgroundColor: '#666666',
+    backgroundColor: '#333',
+    opacity: 0.6,
   },
   sendButtonText: {
     fontSize: 16,

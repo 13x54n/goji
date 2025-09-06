@@ -11,11 +11,9 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
-
 interface WalletProps {
-  // Add any props you might need in the future
-}
 
+}
 interface CryptoAsset {
   id: string;
   name: string;
@@ -49,7 +47,7 @@ export default function Wallet({ }: WalletProps) {
   };
 
   const handleSend = () => {
-    router.push('/send');
+    router.push('/send-contact'); // says unmatached route
   };
 
   const handleTransfer = () => {

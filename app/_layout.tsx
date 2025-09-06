@@ -35,10 +35,10 @@ export default function RootLayout() {
         <Stack.Screen name="receive-crypto" options={{ headerShown: false }} />
         <Stack.Screen name="receive-qr" options={{ headerShown: false }} />
         <Stack.Screen name="settings" options={{ headerShown: false }} />
-        <Stack.Screen name="send" options={{ headerShown: false }} />
         <Stack.Screen name="send-contact" options={{ headerShown: false }} />
         <Stack.Screen name="send-token" options={{ headerShown: false }} />
         <Stack.Screen name="send-review" options={{ headerShown: false }} />
+        <Stack.Screen name="enter-amount" options={{ headerShown: false }} />
       </Stack>
     </>
   );

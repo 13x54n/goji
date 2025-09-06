@@ -1,12 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
-import { CameraView, useCameraPermissions } from 'expo-camera';
+// import { CameraType, CameraView, useCameraPermissions } from 'expo-camera';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useState } from 'react';
 import {
   Alert,
   Clipboard,
-  Modal,
   ScrollView,
   StyleSheet,
   Text,
@@ -20,7 +19,37 @@ export default function SendContact() {
   const router = useRouter();
   const [recipientAddress, setRecipientAddress] = useState('');
   const [showCamera, setShowCamera] = useState(false);
-  const [permission, requestPermission] = useCameraPermissions();
+  
+  // TODO: Replace with actual recent transfers data
+  const recentTransfers: any[] = []; // Empty for now, will be populated with actual data
+
+  // Validation functions
+  const isValidEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const isValidWalletAddress = (address: string) => {
+    // Basic wallet address validation - adjust based on your supported networks
+    // This checks for common wallet address patterns (Ethereum, Bitcoin, etc.)
+    const walletRegex = /^(0x[a-fA-F0-9]{40}|[13][a-km-zA-HJ-NP-Z1-9]{25,34}|[a-zA-Z0-9]{32,44})$/;
+    return walletRegex.test(address);
+  };
+
+  const isRecipientValid = recipientAddress.trim() && 
+    (isValidEmail(recipientAddress.trim()) || isValidWalletAddress(recipientAddress.trim()));
+
+  const handleContinue = () => {
+    if (isRecipientValid) {
+      router.push({
+        pathname: '/send-token',
+        params: {
+          contactName: 'Unknown Contact', // You can extract this from the address or add a name field
+          contactAddress: recipientAddress.trim(),
+        }
+      });
+    }
+  };
 
   const handleBack = () => {
     router.back();
@@ -41,57 +70,7 @@ export default function SendContact() {
   }, []);
 
   const handleScanQR = useCallback(async () => {
-    try {
-      if (!permission) {
-        Alert.alert('Camera Error', 'Camera permissions are still loading. Please try again.');
-        return;
-      }
-
-      if (!permission.granted) {
-        const result = await requestPermission();
-        if (!result.granted) {
-          Alert.alert(
-            'Camera Permission Required', 
-            'Camera permission is required to scan QR codes. Please enable it in your device settings.'
-          );
-          return;
-        }
-      }
-
-      setShowCamera(true);
-    } catch (error) {
-      console.error('Error accessing camera:', error);
-      Alert.alert('Camera Error', 'Failed to access camera. Please try again.');
-    }
-  }, [permission, requestPermission]);
-
-  const handleBarcodeScanned = useCallback(({ type, data }: { type: string; data: string }) => {
-    setShowCamera(false);
-    
-    // Extract address from QR code data
-    // QR codes might contain just the address or a full URI like "ethereum:0x..."
-    let extractedAddress = data;
-    
-    // Handle different QR code formats
-    if (data.includes(':')) {
-      // Extract address from URI format (e.g., "ethereum:0x123...")
-      const parts = data.split(':');
-      if (parts.length > 1) {
-        extractedAddress = parts[1];
-      }
-    }
-    
-    // Basic validation - check if it looks like a crypto address
-    if (extractedAddress && (extractedAddress.startsWith('0x') || extractedAddress.length > 20)) {
-      setRecipientAddress(extractedAddress);
-      Alert.alert('Success', 'QR code scanned successfully!');
-    } else {
-      Alert.alert('Invalid QR Code', 'The scanned QR code does not contain a valid wallet address');
-    }
-  }, []);
-
-  const closeCamera = useCallback(() => {
-    setShowCamera(false);
+    Alert.alert('Camera Not Available', 'Camera functionality is temporarily disabled. Please enter the address manually.');
   }, []);
 
   return (
@@ -106,28 +85,27 @@ export default function SendContact() {
           <View style={styles.placeholder} />
         </View>
 
-        <ScrollView 
-          style={styles.content} 
+        <ScrollView
+          style={styles.content}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 20 }}
         >
           <Text style={styles.sectionTitle}>Receipient Address</Text>
-          <TextInput
-            style={{
-              backgroundColor: '#1a1a1a',
-              borderRadius: 12,
-              padding: 16,
-              borderWidth: 1,
-              borderColor: '#333333',
-              color: '#fff',
-              marginBottom: 20,
-            }}
-            placeholder="Email, Wallet Address"
-            placeholderTextColor="#666"
-            value={recipientAddress}
-            onChangeText={setRecipientAddress}
-          />
-          
+          <View style={styles.searchContainer}>
+            <Ionicons name="search-outline" size={20} color="#fff" />
+            <TextInput
+              style={{
+                flex: 1,
+                padding: 16,
+                color: '#fff',
+              }}
+              placeholder="Email, Wallet Address"
+              placeholderTextColor="#666"
+              value={recipientAddress}
+              onChangeText={setRecipientAddress}
+            />
+          </View>
+
           {/* paste or scan QR code */}
           <View style={styles.pasteButtonContainer}>
             <TouchableOpacity style={styles.pasteButton} onPress={handlePaste}>
@@ -141,52 +119,51 @@ export default function SendContact() {
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Recent</Text>
-            
+            <Text style={styles.sectionTitle}>Recents</Text>
+            <Text style={styles.viewMore}>View More</Text>
           </View>
 
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>All Contacts</Text>
-            
-          </View>
+          {recentTransfers.length > 0 ? (
+            <View style={styles.recentTransfersContainer}>
+              {recentTransfers.map((transfer, index) => (
+                <TouchableOpacity 
+                  key={index} 
+                  style={styles.recentTransferItem}
+                  onPress={() => setRecipientAddress(transfer.address)}
+                >
+                  <View style={styles.transferInfo}>
+                    <Text style={styles.transferName}>{transfer.name || 'Unknown Contact'}</Text>
+                    <Text style={styles.transferAddress}>{transfer.address}</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={20} color="#666" />
+                </TouchableOpacity>
+              ))}
+            </View>
+          ) : (
+            <View style={styles.noRecentsContainer}>
+              <Ionicons name="time-outline" size={48} color="#666" />
+              <Text style={styles.noRecentsText}>No recent recipients</Text>
+              <Text style={styles.noRecentsSubtext}>Your recent addresses will appear here</Text>
+            </View>
+          )}
+
         </ScrollView>
+          <TouchableOpacity 
+            style={[
+              styles.button, 
+              !isRecipientValid && styles.buttonDisabled
+            ]} 
+            onPress={handleContinue}
+            disabled={!isRecipientValid}
+          >
+            <Text style={[
+              styles.buttonText,
+              !isRecipientValid && styles.buttonTextDisabled
+            ]}>
+              Continue
+            </Text>
+          </TouchableOpacity>
       </View>
-
-      {/* Camera Modal */}
-      <Modal
-        visible={showCamera}
-        animationType="slide"
-        presentationStyle="fullScreen"
-      >
-        <View style={styles.cameraContainer}>
-          <StatusBar style="light" />
-          <CameraView
-            style={styles.camera}
-            facing="back"
-            onBarcodeScanned={handleBarcodeScanned}
-            barcodeScannerSettings={{
-              barcodeTypes: ["qr"],
-            }}
-          />
-          <View style={styles.cameraOverlay}>
-            <View style={styles.cameraHeader}>
-              <TouchableOpacity onPress={closeCamera} style={styles.closeButton}>
-                <Ionicons name="close" size={24} color="#fff" />
-              </TouchableOpacity>
-              <Text style={styles.cameraTitle}>Scan QR Code</Text>
-              <View style={styles.placeholder} />
-            </View>
-            <View style={styles.scanArea}>
-              <View style={styles.scanFrame} />
-            </View>
-            <View style={styles.cameraFooter}>
-              <Text style={styles.scanInstructions}>
-                Position the QR code within the frame
-              </Text>
-            </View>
-          </View>
-        </View>
-      </Modal>
     </>
   );
 }
@@ -213,6 +190,14 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#FFFFFF',
   },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1a1a1a',
+    borderRadius: 12,
+    paddingLeft: 16,
+    marginBottom: 20,
+  },
   placeholder: {
     width: 40,
   },
@@ -223,11 +208,20 @@ const styles = StyleSheet.create({
   },
   section: {
     marginBottom: 32,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
+    marginBottom: 16,
+  },
+  viewMore: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#0984e3',
     marginBottom: 16,
   },
   pasteButton: {
@@ -323,5 +317,70 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#FFFFFF',
     textAlign: 'center',
+  },
+  button: {
+    paddingHorizontal: 12,
+    paddingVertical: 16,
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 40,
+    marginHorizontal: 12,
+  },
+  buttonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000',
+  },
+  buttonDisabled: {
+    backgroundColor: '#fff9',
+    opacity: 0.6,
+  },
+  buttonTextDisabled: {
+    color: '#000',
+  },
+  noRecentsContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 50,
+    paddingHorizontal: 20,
+  },
+  noRecentsText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  noRecentsSubtext: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+  },
+  recentTransfersContainer: {
+    marginBottom: 20,
+  },
+  recentTransferItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#1a1a1a',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 8,
+  },
+  transferInfo: {
+    flex: 1,
+  },
+  transferName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    marginBottom: 4,
+  },
+  transferAddress: {
+    fontSize: 14,
+    color: '#666',
   },
 });
