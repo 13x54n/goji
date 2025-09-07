@@ -4,7 +4,6 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
 import {
-  Alert,
   Modal,
   ScrollView,
   StyleSheet,
@@ -13,6 +12,7 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+import CustomAlert from './components/CustomAlert';
 
 interface Token {
   id: string;
@@ -92,6 +92,10 @@ export default function EnterAmount() {
   const [showTokenModal, setShowTokenModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isUSDInput, setIsUSDInput] = useState(false);
+  const [note, setNote] = useState('');
+  const [showNoteModal, setShowNoteModal] = useState(false);
+  const [showErrorAlert, setShowErrorAlert] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   const contactName = params.contactName as string;
   const contactAddress = params.contactAddress as string;
 
@@ -163,15 +167,18 @@ export default function EnterAmount() {
 
   const handleNext = () => {
     if (!selectedToken) {
-      Alert.alert('Error', 'Please select a token');
+      setErrorMessage('Please select a token');
+      setShowErrorAlert(true);
       return;
     }
     if (!amount || parseFloat(amount) <= 0) {
-      Alert.alert('Error', 'Please enter a valid amount');
+      setErrorMessage('Please enter a valid amount');
+      setShowErrorAlert(true);
       return;
     }
     if (parseFloat(amount) > parseFloat(selectedToken.balance.replace(/,/g, ''))) {
-      Alert.alert('Error', 'Insufficient balance');
+      setErrorMessage('Insufficient balance');
+      setShowErrorAlert(true);
       return;
     }
 
@@ -187,6 +194,7 @@ export default function EnterAmount() {
         tokenIcon: selectedToken.icon,
         amount,
         amountUSD,
+        note,
       }
     });
   };
@@ -301,8 +309,13 @@ export default function EnterAmount() {
 
           {/* Action Buttons */}
           <View style={styles.actionButtons}>
-            <TouchableOpacity style={styles.addNoteButton}>
-              <Text style={styles.addNoteText}>Add note</Text>
+            <TouchableOpacity 
+              style={[styles.addNoteButton, note && styles.addNoteButtonActive]}
+              onPress={() => setShowNoteModal(true)}
+            >
+              <Text style={[styles.addNoteText, note && styles.addNoteTextActive]}>
+                {note ? 'Edit note' : 'Add note'}
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[
@@ -367,6 +380,57 @@ export default function EnterAmount() {
             </ScrollView>
           </View>
         </Modal>
+
+        {/* Note Modal */}
+        <Modal
+          visible={showNoteModal}
+          animationType="slide"
+          presentationStyle="pageSheet"
+        >
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <TouchableOpacity onPress={() => setShowNoteModal(false)}>
+                <Ionicons name="close" size={24} color="#fff" />
+              </TouchableOpacity>
+              <Text style={styles.modalTitle}>Add Note</Text>
+              <TouchableOpacity 
+                onPress={() => {
+                  setShowNoteModal(false);
+                }}
+                style={styles.saveButton}
+              >
+                <Text style={styles.saveButtonText}>Save</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.noteContainer}>
+              <TextInput
+                style={styles.noteInput}
+                placeholder="Add a note to this transaction (optional)"
+                placeholderTextColor="#666"
+                value={note}
+                onChangeText={setNote}
+                multiline
+                maxLength={200}
+                autoFocus
+              />
+              <Text style={styles.characterCount}>{note.length}/200</Text>
+            </View>
+          </View>
+        </Modal>
+
+        <CustomAlert
+          visible={showErrorAlert}
+          title="Error"
+          message={errorMessage}
+          buttons={[
+            {
+              text: 'OK',
+              onPress: () => setShowErrorAlert(false),
+            }
+          ]}
+          onClose={() => setShowErrorAlert(false)}
+        />
       </View>
     </>
   );
@@ -494,6 +558,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#FFFFFF',
   },
+  addNoteButtonActive: {
+    backgroundColor: '#0984e3',
+  },
+  addNoteTextActive: {
+    color: '#FFFFFF',
+  },
   previewButton: {
     flex: 1,
     backgroundColor: '#0984e3',
@@ -533,6 +603,9 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '600',
     color: '#FFFFFF',
+  },
+  backspaceButton: {
+    backgroundColor: '#333333',
   },
   modalContainer: {
     flex: 1,
@@ -609,5 +682,34 @@ const styles = StyleSheet.create({
   balanceText: {
     fontSize: 14,
     color: '#CCCCCC',
+  },
+  saveButton: {
+    padding: 8,
+  },
+  saveButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#0984e3',
+  },
+  noteContainer: {
+    flex: 1,
+    padding: 20,
+  },
+  noteInput: {
+    flex: 1,
+    backgroundColor: '#1a1a1a',
+    borderRadius: 12,
+    padding: 16,
+    color: '#fff',
+    fontSize: 16,
+    textAlignVertical: 'top',
+    borderWidth: 1,
+    borderColor: '#333333',
+  },
+  characterCount: {
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'right',
+    marginTop: 8,
   },
 });

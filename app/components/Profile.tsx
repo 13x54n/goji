@@ -1,12 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
-    Alert,
     StyleSheet,
     Text,
     TouchableOpacity,
     View
 } from 'react-native';
 import { sessionService } from '../../lib/sessionService';
+import CustomAlert from './CustomAlert';
 
 interface ProfileProps {
   session: any;
@@ -14,12 +14,24 @@ interface ProfileProps {
 }
 
 export default function Profile({ session, onLogout }: ProfileProps) {
+  const [showAlert, setShowAlert] = useState(false);
+  const [alertConfig, setAlertConfig] = useState({
+    title: '',
+    message: '',
+    buttons: [] as Array<{text: string; onPress: () => void; style?: 'default' | 'cancel' | 'destructive'}>
+  });
+
+  const showCustomAlert = (title: string, message: string, buttons: Array<{text: string; onPress: () => void; style?: 'default' | 'cancel' | 'destructive'}>) => {
+    setAlertConfig({ title, message, buttons });
+    setShowAlert(true);
+  };
+
   const handleLogout = async () => {
-    Alert.alert(
+    showCustomAlert(
       "Logout",
       "Are you sure you want to logout?",
       [
-        { text: "Cancel", style: "cancel" },
+        { text: "Cancel", onPress: () => {} },
         {
           text: "Logout",
           style: "destructive",
@@ -46,6 +58,14 @@ export default function Profile({ session, onLogout }: ProfileProps) {
       <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
         <Text style={styles.logoutButtonText}>Logout</Text>
       </TouchableOpacity>
+
+      <CustomAlert
+        visible={showAlert}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        buttons={alertConfig.buttons}
+        onClose={() => setShowAlert(false)}
+      />
     </View>
   );
 }

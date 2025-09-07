@@ -5,23 +5,36 @@ import { router, useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useState } from "react";
 import {
-  Alert,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from "react-native";
 import { API_ENDPOINTS } from '../config/api';
 import { getDeviceInfo } from '../lib/deviceUtils';
 import { sessionService } from '../lib/sessionService';
+import CustomAlert from './components/CustomAlert';
 
 export default function BiometricSetupScreen() {
   const { email } = useLocalSearchParams<{ email: string }>();
   const [isLoading, setIsLoading] = useState(false);
+  const [showAlert, setShowAlert] = useState(false);
+  const [alertConfig, setAlertConfig] = useState({
+    title: '',
+    message: '',
+    buttons: [] as Array<{text: string; onPress: () => void; style?: 'default' | 'cancel' | 'destructive'}>
+  });
+
+  const showCustomAlert = (title: string, message: string, buttons: Array<{text: string; onPress: () => void; style?: 'default' | 'cancel' | 'destructive'}>) => {
+    setAlertConfig({ title, message, buttons });
+    setShowAlert(true);
+  };
 
   const handleEnablePasskey = async () => {
     if (!email) {
-      Alert.alert("Error", "Email is required");
+      showCustomAlert("Error", "Email is required", [
+        { text: 'OK', onPress: () => {} }
+      ]);
       return;
     }
 
@@ -29,11 +42,11 @@ export default function BiometricSetupScreen() {
     const isEnrolled = await LocalAuthentication.isEnrolledAsync();
 
     if (!hasHardware || !isEnrolled) {
-      Alert.alert(
+      showCustomAlert(
         "Biometric Not Available",
         "Your device doesn't support biometric authentication or it's not configured. Please contact support.",
         [
-          { text: "OK", style: "default" }
+          { text: "OK", onPress: () => {} }
         ]
       );
       return;
@@ -90,21 +103,27 @@ export default function BiometricSetupScreen() {
           });
 
           // Show success message
-          Alert.alert(
+          showCustomAlert(
             "Passkey Created",
             "Your passkey has been set up successfully. You can now use biometric authentication to sign in quickly.",
             [{ text: "Continue", onPress: () => router.replace("/home") }]
           );
         } catch (error) {
           console.error('Error creating passkey on server:', error);
-          Alert.alert("Error", "Failed to create passkey on server. Please try again.");
+          showCustomAlert("Error", "Failed to create passkey on server. Please try again.", [
+            { text: 'OK', onPress: () => {} }
+          ]);
         }
       } else {
-        Alert.alert("Authentication Failed", "Biometric authentication was cancelled or failed.");
+        showCustomAlert("Authentication Failed", "Biometric authentication was cancelled or failed.", [
+          { text: 'OK', onPress: () => {} }
+        ]);
       }
     } catch (error) {
       console.error('Biometric authentication error:', error);
-      Alert.alert("Error", "Biometric authentication failed. Please try again.");
+      showCustomAlert("Error", "Biometric authentication failed. Please try again.", [
+        { text: 'OK', onPress: () => {} }
+      ]);
     } finally {
       setIsLoading(false);
     }
@@ -189,6 +208,14 @@ export default function BiometricSetupScreen() {
           </Text>
         </View>
       </View>
+
+      <CustomAlert
+        visible={showAlert}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        buttons={alertConfig.buttons}
+        onClose={() => setShowAlert(false)}
+      />
     </View>
   );
 }

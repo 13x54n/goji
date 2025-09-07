@@ -2,7 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Image, Modal, ScrollView, Share, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Image, Modal, ScrollView, Share, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import CustomAlert from './components/CustomAlert';
 interface WalletInfo {
   id: string;
   address: string;
@@ -32,6 +33,12 @@ export default function ReceiveQR() {
   const [currentBlockchain, setCurrentBlockchain] = useState<string>('');
   const [qrCodeError, setQrCodeError] = useState(false);
   const [showOtherNetworks, setShowOtherNetworks] = useState(false);
+  const [showAlert, setShowAlert] = useState(false);
+  const [alertConfig, setAlertConfig] = useState({
+    title: '',
+    message: '',
+    buttons: [] as Array<{text: string; onPress: () => void; style?: 'default' | 'cancel' | 'destructive'}>
+  });
 
   useEffect(() => {
     const blockchainParam = blockchain as string || 'ETH-SEPOLIA';
@@ -58,7 +65,9 @@ export default function ReceiveQR() {
       setQrCodeError(false); // Reset QR code error when new wallet is loaded
     } catch (error) {
       console.error('Error fetching wallet address:', error);
-      Alert.alert('Error', 'Failed to load wallet address');
+      showCustomAlert('Error', 'Failed to load wallet address', [
+        { text: 'OK', onPress: () => {} }
+      ]);
     } finally {
       setLoading(false);
     }
@@ -83,10 +92,17 @@ export default function ReceiveQR() {
     }
   };
 
+  const showCustomAlert = (title: string, message: string, buttons: Array<{text: string; onPress: () => void; style?: 'default' | 'cancel' | 'destructive'}>) => {
+    setAlertConfig({ title, message, buttons });
+    setShowAlert(true);
+  };
+
   const handleCopyAddress = async () => {
     if (walletInfo?.address) {
       // In a real app, you would use Clipboard.setString(walletInfo.address)
-      Alert.alert('Copied!', 'Address copied to clipboard');
+      showCustomAlert('Copied!', 'Address copied to clipboard', [
+        { text: 'OK', onPress: () => {} }
+      ]);
     }
   };
 
@@ -386,6 +402,14 @@ export default function ReceiveQR() {
             </ScrollView>
           </View>
         </Modal>
+
+        <CustomAlert
+          visible={showAlert}
+          title={alertConfig.title}
+          message={alertConfig.message}
+          buttons={alertConfig.buttons}
+          onClose={() => setShowAlert(false)}
+        />
       </View>
     </>
   );

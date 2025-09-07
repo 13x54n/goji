@@ -1,22 +1,27 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    Image,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
+import { transactionService } from '../lib/transactionService';
+import { websocketService } from '../lib/websocketService';
+import CustomAlert from './components/CustomAlert';
 
 export default function SendReview() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const [isSending, setIsSending] = useState(false);
+  const [showSuccessAlert, setShowSuccessAlert] = useState(false);
+  const [transactionId, setTransactionId] = useState<string | null>(null);
+  const [transactionStatus, setTransactionStatus] = useState<string>('INITIATED');
 
   const contactName = params.contactName as string;
   const contactAddress = params.contactAddress as string;
@@ -25,33 +30,80 @@ export default function SendReview() {
   const tokenIcon = params.tokenIcon as string;
   const amount = params.amount as string;
   const amountUSD = params.amountUSD as string;
+  const note = params.note as string;
 
   const gasFee = '0.001';
-  const totalAmount = (parseFloat(amount) + parseFloat(gasFee)).toFixed(6);
+  const totalAmount = (parseFloat(amount) - parseFloat(gasFee)).toFixed(6);
+
+  // Setup WebSocket listeners for transaction updates
+  useEffect(() => {
+    const handleTransactionUpdate = (update: any) => {
+      if (transactionId && update.transactionId === transactionId) {
+        setTransactionStatus(update.state);
+        
+        if (update.state === 'COMPLETE' || update.state === 'CONFIRMED') {
+          setIsSending(false);
+          setShowSuccessAlert(true);
+        } else if (update.state === 'FAILED' || update.state === 'CANCELLED') {
+          setIsSending(false);
+          // Show error alert
+        }
+      }
+    };
+
+    websocketService.on('transaction-updated', handleTransactionUpdate);
+    websocketService.on('transaction-status-updated', handleTransactionUpdate);
+
+    return () => {
+      websocketService.off('transaction-updated', handleTransactionUpdate);
+      websocketService.off('transaction-status-updated', handleTransactionUpdate);
+    };
+  }, [transactionId]);
 
   const handleSend = async () => {
     setIsSending(true);
-    // Simulate sending transaction
-    await new Promise(resolve => setTimeout(resolve, 3000));
-    setIsSending(false);
+    setTransactionStatus('INITIATED');
     
-    Alert.alert(
-      'Transaction Sent!', 
-      `Successfully sent ${amount} ${tokenSymbol} to ${contactName}`,
-      [
-        { 
-          text: 'View Transaction', 
-          onPress: () => {
-            // Navigate to transaction details
-            // TODO: Implement transaction details navigation
-          }
-        },
-        { 
-          text: 'Done', 
-          onPress: () => router.push('/home')
-        }
-      ]
-    );
+    try {
+      // For demo purposes, we'll use a mock wallet ID
+      // In a real app, you'd get this from the user's wallet selection
+      const mockWalletId = 'demo-wallet-id';
+      const mockTokenId = 'demo-token-id';
+      
+      const transaction = await transactionService.createTransaction({
+        walletId: mockWalletId,
+        tokenId: mockTokenId,
+        destinationAddress: contactAddress,
+        amount: amount,
+        note: note,
+        feeLevel: 'MEDIUM'
+      });
+      
+      setTransactionId(transaction.id);
+      setTransactionStatus(transaction.state);
+      
+      // If transaction is immediately complete (for demo)
+      if (transaction.state === 'COMPLETE') {
+        setIsSending(false);
+        setShowSuccessAlert(true);
+      }
+      
+    } catch (error) {
+      console.error('Error creating transaction:', error);
+      setIsSending(false);
+      // Show error alert
+    }
+  };
+
+  const handleViewTransaction = () => {
+    // Navigate to transaction details
+    // TODO: Implement transaction details navigation
+    setShowSuccessAlert(false);
+  };
+
+  const handleDone = () => {
+    setShowSuccessAlert(false);
+    router.push('/home');
   };
 
   const handleBack = () => {
@@ -73,27 +125,20 @@ export default function SendReview() {
           </TouchableOpacity>
           <Text style={styles.title}>Review & Send</Text>
           <TouchableOpacity onPress={handleEdit} style={styles.editButton}>
-            <Ionicons name="create" size={20} color="#0984e3" />
           </TouchableOpacity>
         </View>
 
-        <ScrollView 
+        <ScrollView
           style={styles.content}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 20 }}
         >
           <View style={styles.previewCard}>
             <View style={styles.section}>
-              <Text style={styles.sectionLabel}>To</Text>
+              <Text style={styles.sectionLabel}>Recipient</Text>
               <View style={styles.recipientInfo}>
-                <View style={styles.contactAvatar}>
-                  <Text style={styles.contactInitial}>
-                    {contactName?.charAt(0)}
-                  </Text>
-                </View>
                 <View style={styles.contactDetails}>
-                  <Text style={styles.contactName} numberOfLines={1}>{contactName}</Text>
-                  <Text style={styles.contactAddress} numberOfLines={1}>{contactAddress}</Text>
+                  <Text style={styles.contactName} numberOfLines={1}>{contactAddress}</Text>
                 </View>
               </View>
             </View>
@@ -116,6 +161,16 @@ export default function SendReview() {
               </View>
             </View>
 
+            {note && (
+              <>
+                <View style={styles.divider} />
+                <View style={styles.section}>
+                  <Text style={styles.sectionLabel}>Note</Text>
+                  <Text style={styles.noteText} numberOfLines={3}>{note}</Text>
+                </View>
+              </>
+            )}
+
             <View style={styles.divider} />
 
             <View style={styles.section}>
@@ -135,17 +190,10 @@ export default function SendReview() {
                   {totalAmount} {tokenSymbol}
                 </Text>
                 <Text style={styles.totalUSD} numberOfLines={1}>
-                  ≈ ${(parseFloat(amountUSD) + 2.50).toFixed(2)}
+                  ≈ ${(parseFloat(amountUSD) - 2.50).toFixed(2)}
                 </Text>
               </View>
             </View>
-          </View>
-
-          <View style={styles.warningCard}>
-            <Ionicons name="warning" size={20} color="#F59E0B" />
-            <Text style={styles.warningText}>
-              Please review all details carefully. This transaction cannot be undone.
-            </Text>
           </View>
 
           <View style={styles.infoCard}>
@@ -161,8 +209,8 @@ export default function SendReview() {
         </ScrollView>
 
         <View style={styles.footer}>
-          <TouchableOpacity 
-            style={[styles.sendButton, isSending && styles.sendButtonDisabled]} 
+          <TouchableOpacity
+            style={[styles.sendButton, isSending && styles.sendButtonDisabled]}
             onPress={handleSend}
             disabled={isSending}
           >
@@ -176,6 +224,23 @@ export default function SendReview() {
             )}
           </TouchableOpacity>
         </View>
+
+        <CustomAlert
+          visible={showSuccessAlert}
+          title="Transaction Sent!"
+          message={`Successfully sent ${amount} ${tokenSymbol} to ${contactAddress}`}
+          buttons={[
+            {
+              text: 'View Transaction',
+              onPress: handleViewTransaction,
+            },
+            {
+              text: 'Done',
+              onPress: handleDone,
+            }
+          ]}
+          onClose={() => setShowSuccessAlert(false)}
+        />
       </View>
     </>
   );
@@ -211,15 +276,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   previewCard: {
-    backgroundColor: '#1a1a1a',
-    borderRadius: 12,
     padding: 16,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: '#333333',
+    paddingHorizontal: 10,
   },
   section: {
-    marginBottom: 16,
+    // marginBottom: 16,
   },
   sectionLabel: {
     fontSize: 14,
@@ -357,10 +418,12 @@ const styles = StyleSheet.create({
   infoCard: {
     backgroundColor: '#1a1a1a',
     borderRadius: 12,
-    padding: 16,
+    padding: 10,
+    paddingHorizontal: 20,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: '#333333',
+    borderColor: '#fff4',
+    marginTop: 20,
   },
   infoRow: {
     flexDirection: 'row',
@@ -401,5 +464,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#000000',
+  },
+  noteText: {
+    fontSize: 16,
+    color: '#FFFFFF',
+    lineHeight: 22,
+    fontStyle: 'italic',
   },
 });

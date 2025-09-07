@@ -1,8 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
-  Alert,
   Image,
   ImageBackground,
   ScrollView,
@@ -11,6 +10,9 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+import { useCircleWallet } from '../../lib/useCircleWallet';
+import AnimatedBalance from './AnimatedBalance';
+import CustomAlert from './CustomAlert';
 interface WalletProps {
 
 }
@@ -30,13 +32,67 @@ export default function Wallet({ }: WalletProps) {
   const router = useRouter();
   const [isBalanceVisible, setIsBalanceVisible] = useState(true);
   const [activeTab, setActiveTab] = useState<'crypto' | 'cash'>('crypto');
+  const [showAlert, setShowAlert] = useState(false);
+  const [alertConfig, setAlertConfig] = useState({
+    title: '',
+    message: '',
+    buttons: [] as Array<{text: string; onPress: () => void; style?: 'default' | 'cancel' | 'destructive'}>
+  });
+
+  // Use Circle SDK for real wallet data
+  const {
+    wallets,
+    selectedWallet,
+    tokenBalances,
+    transactions,
+    isLoading,
+    isTransactionLoading,
+    error,
+    transactionError,
+    refreshWallets,
+    refreshTokenBalances,
+    refreshTransactions,
+    selectWallet
+  } = useCircleWallet({
+    autoRefresh: true,
+    refreshInterval: 30000 // 30 seconds
+  });
+
+  // Calculate real-time total balance from Circle SDK data
+  const [totalBalance, setTotalBalance] = useState('$0.00');
+  const [totalBalanceChange, setTotalBalanceChange] = useState('+0.00');
+  const [totalBalancePercent, setTotalBalancePercent] = useState('+0.00%');
+
+  // Update total balance when selected wallet changes
+  useEffect(() => {
+    if (selectedWallet) {
+      const totalUSD = selectedWallet.totalUSDValue;
+      setTotalBalance(`$${totalUSD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
+      
+      // Mock change values (in production, you'd calculate these from historical data)
+      const mockChange = totalUSD * 0.01; // 1% change
+      setTotalBalanceChange(`+$${mockChange.toFixed(2)}`);
+      setTotalBalancePercent('+1.00%');
+    } else {
+      setTotalBalance('$0.00');
+      setTotalBalanceChange('+0.00');
+      setTotalBalancePercent('+0.00%');
+    }
+  }, [selectedWallet]);
 
   const toggleBalanceVisibility = () => {
     setIsBalanceVisible(!isBalanceVisible);
   };
 
+  const showCustomAlert = (title: string, message: string, buttons: Array<{text: string; onPress: () => void; style?: 'default' | 'cancel' | 'destructive'}>) => {
+    setAlertConfig({ title, message, buttons });
+    setShowAlert(true);
+  };
+
   const handleDeposit = () => {
-    Alert.alert('Deposit', 'Deposit functionality will be implemented here');
+    showCustomAlert('Deposit', 'Deposit functionality will be implemented here', [
+      { text: 'OK', onPress: () => {} }
+    ]);
   };
 
   const handleReceive = () => {
@@ -51,37 +107,51 @@ export default function Wallet({ }: WalletProps) {
   };
 
   const handleTransfer = () => {
-    Alert.alert('Transfer', 'Transfer functionality will be implemented here');
+    showCustomAlert('Transfer', 'Transfer functionality will be implemented here', [
+      { text: 'OK', onPress: () => {} }
+    ]);
   };
 
   const handlePortfolio = () => {
-    Alert.alert('Portfolio', 'Portfolio view will be implemented here');
+    showCustomAlert('Portfolio', 'Portfolio view will be implemented here', [
+      { text: 'OK', onPress: () => {} }
+    ]);
   };
 
-  const cryptoAssets: CryptoAsset[] = [
-    {
-      id: '1',
-      name: 'Ethereum',
-      symbol: 'ETH',
-      amount: '2.103 ETH',
-      value: '$6,875.20',
-      change: '+3.26%',
-      changePercent: '+3.26%',
-      isPositive: true,
-      imageUrl: 'https://imgs.search.brave.com/5zdHHoIlKZYAd0DQ3SblHsKOshWYOOQscgeaNi0ZFwU/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9jZG4u/d29ybGR2ZWN0b3Js/b2dvLmNvbS9sb2dv/cy9ldGhlcmV1bS1l/dGguc3Zn'
-    },
-    {
-      id: '2',
-      name: 'USD Coin',
-      symbol: 'USDC',
-      amount: '2,421 USDC',
-      value: '$2,421.00',
-      change: '-0.01%',
-      changePercent: '-0.01%',
-      isPositive: false,
-      imageUrl: 'https://imgs.search.brave.com/8NYhXqk1fx3dnUnHGJsOpkqHbNED7y5Mphrj0q3UQWQ/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly91cGxv/YWQud2lraW1lZGlh/Lm9yZy93aWtpcGVk/aWEvY29tbW9ucy80/LzRhL0NpcmNsZV9V/U0RDX0xvZ28uc3Zn'
-    }
-  ];
+  // Convert Circle SDK token balances to crypto assets format
+  const cryptoAssets: CryptoAsset[] = tokenBalances.map((balance, index) => {
+    const amount = parseFloat(balance.amount);
+    const mockPrice = getMockTokenPrice(balance.tokenSymbol);
+    const usdValue = amount * mockPrice;
+    const mockChange = Math.random() * 0.1 - 0.05; // Random change between -5% and +5%
+    const isPositive = mockChange >= 0;
+    
+    return {
+      id: balance.tokenId || index.toString(),
+      name: balance.tokenName,
+      symbol: balance.tokenSymbol,
+      amount: `${balance.amount} ${balance.tokenSymbol}`,
+      value: `$${usdValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      change: `${isPositive ? '+' : ''}${(mockChange * 100).toFixed(2)}%`,
+      changePercent: `${isPositive ? '+' : ''}${(mockChange * 100).toFixed(2)}%`,
+      isPositive: isPositive,
+      imageUrl: balance.imageUrl || `https://cryptologos.cc/logos/${balance.tokenSymbol.toLowerCase()}-${balance.tokenSymbol.toLowerCase()}-logo.png`
+    };
+  });
+
+  // Mock token prices (in production, use real price API)
+  function getMockTokenPrice(symbol: string): number {
+    const prices: { [key: string]: number } = {
+      'ETH': 2500,
+      'BTC': 45000,
+      'USDC': 1,
+      'USDT': 1,
+      'MATIC': 0.8,
+      'AVAX': 25,
+      'SOL': 100
+    };
+    return prices[symbol] || 1;
+  }
 
   const cashAssets: CryptoAsset[] = [
     {
@@ -134,22 +204,51 @@ export default function Wallet({ }: WalletProps) {
         <View style={styles.overlay}>
         <View style={styles.balanceHeader}>
           <Text style={styles.balanceLabel}>Total value</Text>
-          <TouchableOpacity style={styles.eyeButton} onPress={toggleBalanceVisibility}>
-            <Ionicons
-              name={isBalanceVisible ? "eye-outline" : "eye-off-outline"}
-              size={20}
-              color="#fff"
-            />
-          </TouchableOpacity>
+          <View style={styles.balanceHeaderRight}>
+            {/* Connection Status Indicator */}
+            <View style={[styles.connectionIndicator, { 
+              backgroundColor: selectedWallet ? '#4CAF50' : '#F44336' 
+            }]}>
+              <Ionicons 
+                name={selectedWallet ? "wifi" : "wifi"} 
+                size={12} 
+                color="#FFFFFF" 
+              />
+            </View>
+            <TouchableOpacity style={styles.eyeButton} onPress={toggleBalanceVisibility}>
+              <Ionicons
+                name={isBalanceVisible ? "eye-outline" : "eye-off-outline"}
+                size={20}
+                color="#fff"
+              />
+            </TouchableOpacity>
+          </View>
         </View>
 
         <View style={styles.balanceRow}>
-          <Text style={styles.balanceValue}>
-            {isBalanceVisible ? '$12,850.76' : '••••••'}
-          </Text>
+          <AnimatedBalance 
+            value={isBalanceVisible ? totalBalance : '••••••'}
+            style={styles.balanceValue}
+            animationDuration={300}
+          />
           <View style={styles.balanceChangeContainer}>
-            <Text style={styles.balanceChangePositive}>+124.12</Text>
-            <Text style={styles.balanceChangePercent}>+0.98% Last 24h</Text>
+            <Text style={[
+              styles.balanceChangePositive,
+              totalBalanceChange.startsWith('-') && styles.balanceChangeNegative
+            ]}>
+              {totalBalanceChange}
+            </Text>
+            <Text style={[
+              styles.balanceChangePercent,
+              totalBalancePercent.startsWith('-') && styles.balanceChangePercentNegative
+            ]}>
+              {totalBalancePercent} Last 24h
+            </Text>
+            {selectedWallet && (
+              <Text style={styles.lastUpdate}>
+                Updated {new Date().toLocaleTimeString()}
+              </Text>
+            )}
           </View>
         </View>
 
@@ -184,6 +283,25 @@ export default function Wallet({ }: WalletProps) {
             <Text style={styles.actionButtonText}>Buy</Text>
           </TouchableOpacity>
         </View>
+
+        {/* Error Display */}
+        {error && (
+          <View style={styles.errorContainer}>
+            <Ionicons name="warning" size={16} color="#FF3B30" />
+            <Text style={styles.errorText}>{error}</Text>
+            <TouchableOpacity onPress={refreshTokenBalances}>
+              <Ionicons name="refresh" size={16} color="#FF3B30" />
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Loading Indicator */}
+        {isLoading && (
+          <View style={styles.loadingContainer}>
+            <Ionicons name="refresh" size={16} color="#FFFFFF" />
+            <Text style={styles.loadingText}>Loading wallet data...</Text>
+          </View>
+        )}
         </View>
       </ImageBackground>
 
@@ -215,6 +333,14 @@ export default function Wallet({ }: WalletProps) {
           </View>
         ))}
       </View>
+
+      <CustomAlert
+        visible={showAlert}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        buttons={alertConfig.buttons}
+        onClose={() => setShowAlert(false)}
+      />
     </ScrollView>
   );
 }
@@ -249,6 +375,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
   },
+  balanceHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  connectionIndicator: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   balanceLabel: {
     fontSize: 14,
     color: '#CCCCCC',
@@ -277,9 +415,20 @@ const styles = StyleSheet.create({
     color: '#68d391',
     fontWeight: '600',
   },
+  balanceChangeNegative: {
+    color: '#F44336',
+  },
   balanceChangePercent: {
     fontSize: 14,
     color: '#68d391',
+  },
+  balanceChangePercentNegative: {
+    color: '#F44336',
+  },
+  lastUpdate: {
+    fontSize: 10,
+    color: '#888888',
+    marginTop: 2,
   },
   actionButtons: {
     flexDirection: 'row',
@@ -385,5 +534,32 @@ const styles = StyleSheet.create({
   },
   negativeChange: {
     color: '#EF4444',
+  },
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 59, 48, 0.1)',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 16,
+  },
+  errorText: {
+    color: '#FF3B30',
+    fontSize: 14,
+    flex: 1,
+    marginLeft: 8,
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 16,
+  },
+  loadingText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    marginLeft: 8,
   },
 });

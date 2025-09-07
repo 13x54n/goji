@@ -4,21 +4,27 @@ import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useState } from 'react';
 import {
-  Alert,
-  Clipboard,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
+    Clipboard,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from 'react-native';
+import CustomAlert from './components/CustomAlert';
 
 
 export default function SendContact() {
   const router = useRouter();
   const [recipientAddress, setRecipientAddress] = useState('');
   const [showCamera, setShowCamera] = useState(false);
+  const [showAlert, setShowAlert] = useState(false);
+  const [alertConfig, setAlertConfig] = useState({
+    title: '',
+    message: '',
+    buttons: [] as Array<{text: string; onPress: () => void; style?: 'default' | 'cancel' | 'destructive'}>
+  });
   
   // TODO: Replace with actual recent transfers data
   const recentTransfers: any[] = []; // Empty for now, will be populated with actual data
@@ -55,22 +61,33 @@ export default function SendContact() {
     router.back();
   };
 
+  const showCustomAlert = (title: string, message: string, buttons: Array<{text: string; onPress: () => void; style?: 'default' | 'cancel' | 'destructive'}>) => {
+    setAlertConfig({ title, message, buttons });
+    setShowAlert(true);
+  };
+
   const handlePaste = useCallback(async () => {
     try {
       const clipboardContent = await Clipboard.getString();
       if (clipboardContent.trim()) {
         setRecipientAddress(clipboardContent.trim());
       } else {
-        Alert.alert('Clipboard Empty', 'No content found in clipboard');
+        showCustomAlert('Clipboard Empty', 'No content found in clipboard', [
+          { text: 'OK', onPress: () => {} }
+        ]);
       }
     } catch (error) {
       console.error('Error reading clipboard:', error);
-      Alert.alert('Error', 'Failed to read clipboard content');
+      showCustomAlert('Error', 'Failed to read clipboard content', [
+        { text: 'OK', onPress: () => {} }
+      ]);
     }
   }, []);
 
   const handleScanQR = useCallback(async () => {
-    Alert.alert('Camera Not Available', 'Camera functionality is temporarily disabled. Please enter the address manually.');
+    showCustomAlert('Camera Not Available', 'Camera functionality is temporarily disabled. Please enter the address manually.', [
+      { text: 'OK', onPress: () => {} }
+    ]);
   }, []);
 
   return (
@@ -163,6 +180,14 @@ export default function SendContact() {
               Continue
             </Text>
           </TouchableOpacity>
+
+        <CustomAlert
+          visible={showAlert}
+          title={alertConfig.title}
+          message={alertConfig.message}
+          buttons={alertConfig.buttons}
+          onClose={() => setShowAlert(false)}
+        />
       </View>
     </>
   );

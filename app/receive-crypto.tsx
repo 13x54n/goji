@@ -2,7 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import CustomAlert from './components/CustomAlert';
 
 interface Blockchain {
   blockchain: string;
@@ -18,10 +19,21 @@ export default function ReceiveCrypto() {
   const router = useRouter();
   const [blockchains, setBlockchains] = useState<Blockchain[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showAlert, setShowAlert] = useState(false);
+  const [alertConfig, setAlertConfig] = useState({
+    title: '',
+    message: '',
+    buttons: [] as Array<{text: string; onPress: () => void; style?: 'default' | 'cancel' | 'destructive'}>
+  });
 
   useEffect(() => {
     fetchBlockchains();
   }, []);
+
+  const showCustomAlert = (title: string, message: string, buttons: Array<{text: string; onPress: () => void; style?: 'default' | 'cancel' | 'destructive'}>) => {
+    setAlertConfig({ title, message, buttons });
+    setShowAlert(true);
+  };
 
   const fetchBlockchains = async () => {
     try {
@@ -39,7 +51,9 @@ export default function ReceiveCrypto() {
       setBlockchains(data.blockchains);
     } catch (error) {
       console.error('Error fetching blockchains:', error);
-      Alert.alert('Error', 'Failed to load blockchains');
+      showCustomAlert('Error', 'Failed to load blockchains', [
+        { text: 'OK', onPress: () => {} }
+      ]);
     } finally {
       setLoading(false);
     }
@@ -203,6 +217,14 @@ export default function ReceiveCrypto() {
             ))}
           </View>
         </ScrollView>
+
+        <CustomAlert
+          visible={showAlert}
+          title={alertConfig.title}
+          message={alertConfig.message}
+          buttons={alertConfig.buttons}
+          onClose={() => setShowAlert(false)}
+        />
       </View>
     </>
   );

@@ -4,7 +4,6 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
 import {
-  Alert,
   ScrollView,
   StyleSheet,
   Text,
@@ -12,6 +11,7 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+import CustomAlert from './components/CustomAlert';
 
 interface Token {
   id: string;
@@ -75,6 +75,12 @@ export default function SendToken() {
   const [amountUSD, setAmountUSD] = useState('0.00');
   const [showTokenModal, setShowTokenModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showAlert, setShowAlert] = useState(false);
+  const [alertConfig, setAlertConfig] = useState({
+    title: '',
+    message: '',
+    buttons: [] as Array<{text: string; onPress: () => void; style?: 'default' | 'cancel' | 'destructive'}>
+  });
   const contactName = params.contactName as string;
   const contactAddress = params.contactAddress as string;
 
@@ -118,17 +124,28 @@ export default function SendToken() {
     }
   };
 
+  const showCustomAlert = (title: string, message: string, buttons: Array<{text: string; onPress: () => void; style?: 'default' | 'cancel' | 'destructive'}>) => {
+    setAlertConfig({ title, message, buttons });
+    setShowAlert(true);
+  };
+
   const handleNext = () => {
     if (!selectedToken) {
-      Alert.alert('Error', 'Please select a token');
+      showCustomAlert('Error', 'Please select a token', [
+        { text: 'OK', onPress: () => {} }
+      ]);
       return;
     }
     if (!amount || parseFloat(amount) <= 0) {
-      Alert.alert('Error', 'Please enter a valid amount');
+      showCustomAlert('Error', 'Please enter a valid amount', [
+        { text: 'OK', onPress: () => {} }
+      ]);
       return;
     }
     if (parseFloat(amount) > parseFloat(selectedToken.balance.replace(/,/g, ''))) {
-      Alert.alert('Error', 'Insufficient balance');
+      showCustomAlert('Error', 'Insufficient balance', [
+        { text: 'OK', onPress: () => {} }
+      ]);
       return;
     }
 
@@ -195,6 +212,13 @@ export default function SendToken() {
           </View>
         </ScrollView>
 
+        <CustomAlert
+          visible={showAlert}
+          title={alertConfig.title}
+          message={alertConfig.message}
+          buttons={alertConfig.buttons}
+          onClose={() => setShowAlert(false)}
+        />
       </View>
     </>
   );

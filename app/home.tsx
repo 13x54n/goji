@@ -3,20 +3,21 @@ import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
 import {
-  BackHandler,
-  KeyboardAvoidingView,
-  Platform,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View
+    BackHandler,
+    KeyboardAvoidingView,
+    Platform,
+    SafeAreaView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import { sessionService } from '../lib/sessionService';
 import AIChat from './components/AIChat';
 import MenuDrawer from './components/MenuDrawer';
+import PriceTicker from './components/PriceTicker';
 import Profile from './components/Profile';
-import Transactions from './components/Transactions';
+import RealTimeTransactions from './components/RealTimeTransactions';
 import Wallet from './components/Wallet';
 
 interface TabItem {
@@ -78,7 +79,7 @@ export default function HomeScreen() {
       case 'wallet':
         return <Wallet />;
       case 'transactions':
-        return <Transactions />;
+        return <RealTimeTransactions walletId="demo-wallet-id" />;
       case 'profile':
         return <Profile session={session} onLogout={handleLogout} />;
       default:

@@ -5,18 +5,18 @@ import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect, useState } from "react";
 import {
-  Alert,
-  KeyboardAvoidingView,
-  Linking,
-  Platform,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    KeyboardAvoidingView,
+    Linking,
+    Platform,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { API_ENDPOINTS } from '../config/api';
 import { sessionService } from '../lib/sessionService';
+import CustomAlert from './components/CustomAlert';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
@@ -28,6 +28,17 @@ export default function LoginScreen() {
   const [isEmailValid, setIsEmailValid] = useState(false);
   const [isCheckingPasskey, setIsCheckingPasskey] = useState(false);
   const [passkeyCheckComplete, setPasskeyCheckComplete] = useState(false);
+  const [showAlert, setShowAlert] = useState(false);
+  const [alertConfig, setAlertConfig] = useState({
+    title: '',
+    message: '',
+    buttons: [] as Array<{text: string; onPress: () => void; style?: 'default' | 'cancel' | 'destructive'}>
+  });
+
+  const showCustomAlert = (title: string, message: string, buttons: Array<{text: string; onPress: () => void; style?: 'default' | 'cancel' | 'destructive'}>) => {
+    setAlertConfig({ title, message, buttons });
+    setShowAlert(true);
+  };
 
   useEffect(() => {
     checkExistingSession();
@@ -192,7 +203,9 @@ export default function LoginScreen() {
 
   const handlePasskeyLogin = async () => {
     if (!isPasskeySupported) {
-      Alert.alert("Biometric Not Available", "Your device doesn't support biometric authentication. Please contact support.");
+      showCustomAlert("Biometric Not Available", "Your device doesn't support biometric authentication. Please contact support.", [
+        { text: 'OK', onPress: () => {} }
+      ]);
       return;
     }
 
@@ -216,11 +229,15 @@ export default function LoginScreen() {
             await fetchAndStorePasskeyData(email);
             const newSession = sessionService.getSession();
             if (!newSession || !newSession.credentialId) {
-              Alert.alert("Error", "No passkey found for this device. Please set up a passkey first.");
+              showCustomAlert("Error", "No passkey found for this device. Please set up a passkey first.", [
+                { text: 'OK', onPress: () => {} }
+              ]);
               return;
             }
           } else {
-            Alert.alert("Error", "No passkey found. Please set up a passkey first.");
+            showCustomAlert("Error", "No passkey found. Please set up a passkey first.", [
+              { text: 'OK', onPress: () => {} }
+            ]);
             return;
           }
         }
@@ -251,18 +268,26 @@ export default function LoginScreen() {
             router.replace("/home");
           } else {
             const errorData = await response.json();
-            Alert.alert("Authentication Failed", errorData.error || "Passkey verification failed.");
+            showCustomAlert("Authentication Failed", errorData.error || "Passkey verification failed.", [
+              { text: 'OK', onPress: () => {} }
+            ]);
           }
         } catch (error) {
           console.error('Error verifying passkey:', error);
-          Alert.alert("Error", "Failed to verify passkey with server. Please try again.");
+          showCustomAlert("Error", "Failed to verify passkey with server. Please try again.", [
+            { text: 'OK', onPress: () => {} }
+          ]);
         }
       } else {
-        Alert.alert("Authentication Failed", "Passkey authentication was cancelled or failed.");
+        showCustomAlert("Authentication Failed", "Passkey authentication was cancelled or failed.", [
+          { text: 'OK', onPress: () => {} }
+        ]);
       }
     } catch (error) {
       console.error('Passkey authentication error:', error);
-      Alert.alert("Error", "Passkey authentication failed. Please try again.");
+      showCustomAlert("Error", "Passkey authentication failed. Please try again.", [
+        { text: 'OK', onPress: () => {} }
+      ]);
     } finally {
       setIsLoading(false);
     }
@@ -270,12 +295,16 @@ export default function LoginScreen() {
 
   const handleContinue = async () => {
     if (!email.trim()) {
-      Alert.alert("Error", "Please enter your email address");
+      showCustomAlert("Error", "Please enter your email address", [
+        { text: 'OK', onPress: () => {} }
+      ]);
       return;
     }
 
     if (!isEmailValid) {
-      Alert.alert("Error", "Please enter a valid email address");
+      showCustomAlert("Error", "Please enter a valid email address", [
+        { text: 'OK', onPress: () => {} }
+      ]);
       return;
     }
 
@@ -396,6 +425,14 @@ export default function LoginScreen() {
           </Text>
         </View>
       </View>
+
+      <CustomAlert
+        visible={showAlert}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        buttons={alertConfig.buttons}
+        onClose={() => setShowAlert(false)}
+      />
     </KeyboardAvoidingView>
   );
 }

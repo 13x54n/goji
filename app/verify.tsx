@@ -3,24 +3,35 @@ import { router, useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useRef, useState } from "react";
 import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { API_ENDPOINTS } from '../config/api';
 import { sessionService } from '../lib/sessionService';
+import CustomAlert from './components/CustomAlert';
 
 export default function VerifyScreen() {
   const { email } = useLocalSearchParams<{ email: string }>();
   const [code, setCode] = useState(["", "", "", "", "", ""]);
   const [isLoading, setIsLoading] = useState(false);
   const inputRefs = useRef<TextInput[]>([]);
+  const [showAlert, setShowAlert] = useState(false);
+  const [alertConfig, setAlertConfig] = useState({
+    title: '',
+    message: '',
+    buttons: [] as Array<{text: string; onPress: () => void; style?: 'default' | 'cancel' | 'destructive'}>
+  });
+
+  const showCustomAlert = (title: string, message: string, buttons: Array<{text: string; onPress: () => void; style?: 'default' | 'cancel' | 'destructive'}>) => {
+    setAlertConfig({ title, message, buttons });
+    setShowAlert(true);
+  };
 
   const handleCodeChange = (text: string, index: number) => {
     const newCode = [...code];
@@ -68,7 +79,9 @@ export default function VerifyScreen() {
     const verificationCode = code.join("");
     
     if (verificationCode.length !== 6) {
-      Alert.alert("Error", "Please enter the complete 6-digit code");
+      showCustomAlert("Error", "Please enter the complete 6-digit code", [
+        { text: 'OK', onPress: () => {} }
+      ]);
       return;
     }
 
@@ -110,7 +123,9 @@ export default function VerifyScreen() {
           router.replace("/home");
         } catch (sessionError) {
           console.error('Error creating session:', sessionError);
-          Alert.alert("Error", "Failed to create session. Please try again.");
+          showCustomAlert("Error", "Failed to create session. Please try again.", [
+            { text: 'OK', onPress: () => {} }
+          ]);
         }
       } else {
         // New user, navigate to biometric setup
@@ -121,7 +136,9 @@ export default function VerifyScreen() {
       }
     } catch (error: any) {
       console.error('Error verifying code:', error);
-      Alert.alert("Error", error.message || "Verification failed. Please try again.");
+      showCustomAlert("Error", error.message || "Verification failed. Please try again.", [
+        { text: 'OK', onPress: () => {} }
+      ]);
     } finally {
       setIsLoading(false);
     }
@@ -143,10 +160,14 @@ export default function VerifyScreen() {
       }
 
       await response.json();
-      Alert.alert("Code Sent", "A new verification code has been sent to your email");
+      showCustomAlert("Code Sent", "A new verification code has been sent to your email", [
+        { text: 'OK', onPress: () => {} }
+      ]);
     } catch (error: any) {
       console.error('Error resending code:', error);
-      Alert.alert("Error", error.message || "Failed to resend code. Please try again.");
+      showCustomAlert("Error", error.message || "Failed to resend code. Please try again.", [
+        { text: 'OK', onPress: () => {} }
+      ]);
     }
   };
 
@@ -224,6 +245,14 @@ export default function VerifyScreen() {
           </View>
         </View>
       </ScrollView>
+
+      <CustomAlert
+        visible={showAlert}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        buttons={alertConfig.buttons}
+        onClose={() => setShowAlert(false)}
+      />
     </KeyboardAvoidingView>
   );
 }

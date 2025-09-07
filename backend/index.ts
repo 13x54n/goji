@@ -1,19 +1,36 @@
 import cors from 'cors';
 import dotenv from 'dotenv';
 import express from 'express';
+import { createServer } from 'http';
 import mongoose from 'mongoose';
 import path from 'path';
+import { Server as SocketIOServer } from 'socket.io';
 import { databaseLogger, devLogger, errorLogger, prodLogger } from './middleware/logger';
 import authRoutes from './routes/authRoutes';
+import circleWalletRoutes from './routes/circleWalletRoutes';
 import emailRoutes from './routes/emailRoutes';
 import logRoutes from './routes/logRoutes';
 import passkeyRoutes from './routes/passkeyRoutes';
 import walletRoutes from './routes/walletRoutes';
+import { WalletMonitoringService } from './services/walletMonitoringService';
 
 dotenv.config();
 
 const app = express();
+const server = createServer(app);
 const PORT = process.env.PORT || 4000;
+
+// Initialize Socket.IO
+const io = new SocketIOServer(server, {
+  cors: {
+    origin: process.env.FRONTEND_URL || "http://localhost:8081",
+    methods: ["GET", "POST"],
+    credentials: true
+  }
+});
+
+// Initialize wallet monitoring service
+const walletMonitoringService = new WalletMonitoringService(io);
 
 // Middleware
 app.use(cors());
@@ -54,6 +71,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/email', emailRoutes);
 app.use('/api/logs', logRoutes);
 app.use('/api/wallets', walletRoutes);
+app.use('/api/circle', circleWalletRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -66,8 +84,9 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   res.status(500).json({ error: 'Something went wrong!' });
 });
 
-app.listen(Number(PORT), '0.0.0.0', () => {
+server.listen(Number(PORT), '0.0.0.0', () => {
   console.log(`Server is running on port ${PORT}`);
+  console.log(`WebSocket server is running on port ${PORT}`);
   
   // Get the actual local IP address dynamically
   const os = require('os');
@@ -88,4 +107,8 @@ app.listen(Number(PORT), '0.0.0.0', () => {
   }
   
   console.log(`Server accessible at: http://${localIP}:${PORT}`);
+  console.log(`WebSocket accessible at: ws://${localIP}:${PORT}`);
 });
+
+// Export for use in other modules
+export { walletMonitoringService };

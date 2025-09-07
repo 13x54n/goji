@@ -4,7 +4,6 @@ import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
 import {
-    Alert,
     SafeAreaView,
     ScrollView,
     StyleSheet,
@@ -16,11 +15,23 @@ import {
 import { API_ENDPOINTS } from '../config/api';
 import { getDeviceInfo } from '../lib/deviceUtils';
 import { sessionService } from '../lib/sessionService';
+import CustomAlert from './components/CustomAlert';
 
 export default function SettingsScreen() {
   const [session, setSession] = useState<any>(null);
   const [hasPasskey, setHasPasskey] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showAlert, setShowAlert] = useState(false);
+  const [alertConfig, setAlertConfig] = useState({
+    title: '',
+    message: '',
+    buttons: [] as Array<{text: string; onPress: () => void; style?: 'default' | 'cancel' | 'destructive'}>
+  });
+
+  const showCustomAlert = (title: string, message: string, buttons: Array<{text: string; onPress: () => void; style?: 'default' | 'cancel' | 'destructive'}>) => {
+    setAlertConfig({ title, message, buttons });
+    setShowAlert(true);
+  };
 
   useEffect(() => {
     const currentSession = sessionService.getSession();
@@ -44,7 +55,9 @@ export default function SettingsScreen() {
 
   const enablePasskey = async () => {
     if (!session?.email) {
-      Alert.alert("Error", "Email is required");
+      showCustomAlert("Error", "Email is required", [
+        { text: 'OK', onPress: () => {} }
+      ]);
       return;
     }
 
@@ -52,10 +65,10 @@ export default function SettingsScreen() {
     const isEnrolled = await LocalAuthentication.isEnrolledAsync();
 
     if (!hasHardware || !isEnrolled) {
-      Alert.alert(
+      showCustomAlert(
         "Biometric Not Available",
         "Your device doesn't support biometric authentication or it's not configured. Please set up Face ID or Touch ID in your device settings.",
-        [{ text: "OK", style: "default" }]
+        [{ text: "OK", onPress: () => {} }]
       );
       return;
     }
@@ -108,28 +121,36 @@ export default function SettingsScreen() {
           });
 
           setHasPasskey(true);
-          Alert.alert("Success", "Passkey has been enabled successfully!");
+          showCustomAlert("Success", "Passkey has been enabled successfully!", [
+            { text: 'OK', onPress: () => {} }
+          ]);
         } catch (error) {
           console.error('Error creating passkey on server:', error);
-          Alert.alert("Error", "Failed to enable passkey. Please try again.");
+          showCustomAlert("Error", "Failed to enable passkey. Please try again.", [
+            { text: 'OK', onPress: () => {} }
+          ]);
         }
       } else {
-        Alert.alert("Authentication Failed", "Biometric authentication was cancelled or failed.");
+        showCustomAlert("Authentication Failed", "Biometric authentication was cancelled or failed.", [
+          { text: 'OK', onPress: () => {} }
+        ]);
       }
     } catch (error) {
       console.error('Biometric authentication error:', error);
-      Alert.alert("Error", "Biometric authentication failed. Please try again.");
+      showCustomAlert("Error", "Biometric authentication failed. Please try again.", [
+        { text: 'OK', onPress: () => {} }
+      ]);
     } finally {
       setIsLoading(false);
     }
   };
 
   const disablePasskey = async () => {
-    Alert.alert(
+    showCustomAlert(
       "Disable Passkey",
       "Are you sure you want to disable passkey authentication? You'll need to use email verification for future logins.",
       [
-        { text: "Cancel", style: "cancel" },
+        { text: "Cancel", onPress: () => {} },
         {
           text: "Disable",
           style: "destructive",
@@ -143,10 +164,14 @@ export default function SettingsScreen() {
               });
               
               setHasPasskey(false);
-              Alert.alert("Success", "Passkey has been disabled.");
+              showCustomAlert("Success", "Passkey has been disabled.", [
+                { text: 'OK', onPress: () => {} }
+              ]);
             } catch (error) {
               console.error('Error disabling passkey:', error);
-              Alert.alert("Error", "Failed to disable passkey. Please try again.");
+              showCustomAlert("Error", "Failed to disable passkey. Please try again.", [
+                { text: 'OK', onPress: () => {} }
+              ]);
             }
           }
         }
@@ -155,11 +180,11 @@ export default function SettingsScreen() {
   };
 
   const handleLogout = () => {
-    Alert.alert(
+    showCustomAlert(
       "Logout",
       "Are you sure you want to logout?",
       [
-        { text: "Cancel", style: "cancel" },
+        { text: "Cancel", onPress: () => {} },
         {
           text: "Logout",
           style: "destructive",
@@ -197,7 +222,9 @@ export default function SettingsScreen() {
       subtitle: 'Password, 2FA, and security settings',
       icon: 'shield-checkmark',
       type: 'navigate',
-      onPress: () => Alert.alert("Coming Soon", "Security settings will be available soon."),
+      onPress: () => showCustomAlert("Coming Soon", "Security settings will be available soon.", [
+        { text: 'OK', onPress: () => {} }
+      ]),
     },
     {
       id: 'privacy',
@@ -205,7 +232,9 @@ export default function SettingsScreen() {
       subtitle: 'Data and privacy controls',
       icon: 'lock-closed',
       type: 'navigate',
-      onPress: () => Alert.alert("Coming Soon", "Privacy settings will be available soon."),
+      onPress: () => showCustomAlert("Coming Soon", "Privacy settings will be available soon.", [
+        { text: 'OK', onPress: () => {} }
+      ]),
     },
   ];
 
@@ -289,6 +318,14 @@ export default function SettingsScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      <CustomAlert
+        visible={showAlert}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        buttons={alertConfig.buttons}
+        onClose={() => setShowAlert(false)}
+      />
     </SafeAreaView>
   );
 }
