@@ -10,11 +10,11 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
-import { useCircleWallet } from '../../lib/useCircleWallet';
+import { API_BASE_URL } from '../../config/api';
 import AnimatedBalance from './AnimatedBalance';
 import CustomAlert from './CustomAlert';
 interface WalletProps {
-
+  session: any;
 }
 interface CryptoAsset {
   id: string;
@@ -28,7 +28,7 @@ interface CryptoAsset {
   imageUrl: string;
 }
 
-export default function Wallet({ }: WalletProps) {
+export default function Wallet({ session }: WalletProps) {
   const router = useRouter();
   const [isBalanceVisible, setIsBalanceVisible] = useState(true);
   const [activeTab, setActiveTab] = useState<'crypto' | 'cash'>('crypto');
@@ -36,63 +36,28 @@ export default function Wallet({ }: WalletProps) {
   const [alertConfig, setAlertConfig] = useState({
     title: '',
     message: '',
-    buttons: [] as Array<{text: string; onPress: () => void; style?: 'default' | 'cancel' | 'destructive'}>
+    buttons: [] as Array<{ text: string; onPress: () => void; style?: 'default' | 'cancel' | 'destructive' }>
   });
 
-  // Use Circle SDK for real wallet data
-  const {
-    wallets,
-    selectedWallet,
-    tokenBalances,
-    transactions,
-    isLoading,
-    isTransactionLoading,
-    error,
-    transactionError,
-    refreshWallets,
-    refreshTokenBalances,
-    refreshTransactions,
-    selectWallet
-  } = useCircleWallet({
-    autoRefresh: true,
-    refreshInterval: 30000 // 30 seconds
-  });
+  // Real wallet data from API
+  const [wallets, setWallets] = useState<any[]>([]);
+  const [selectedWallet, setSelectedWallet] = useState<any>(null);
+  const [tokenBalances, setTokenBalances] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Calculate real-time total balance from Circle SDK data
+  // Calculate real-time total balance from API data
   const [totalBalance, setTotalBalance] = useState('$0.00');
   const [totalBalanceChange, setTotalBalanceChange] = useState('+0.00');
   const [totalBalancePercent, setTotalBalancePercent] = useState('+0.00%');
-
-  // Update total balance when selected wallet changes
-  useEffect(() => {
-    if (selectedWallet) {
-      const totalUSD = selectedWallet.totalUSDValue;
-      setTotalBalance(`$${totalUSD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
-      
-      // Mock change values (in production, you'd calculate these from historical data)
-      const mockChange = totalUSD * 0.01; // 1% change
-      setTotalBalanceChange(`+$${mockChange.toFixed(2)}`);
-      setTotalBalancePercent('+1.00%');
-    } else {
-      setTotalBalance('$0.00');
-      setTotalBalanceChange('+0.00');
-      setTotalBalancePercent('+0.00%');
-    }
-  }, [selectedWallet]);
 
   const toggleBalanceVisibility = () => {
     setIsBalanceVisible(!isBalanceVisible);
   };
 
-  const showCustomAlert = (title: string, message: string, buttons: Array<{text: string; onPress: () => void; style?: 'default' | 'cancel' | 'destructive'}>) => {
+  const showCustomAlert = (title: string, message: string, buttons: Array<{ text: string; onPress: () => void; style?: 'default' | 'cancel' | 'destructive' }>) => {
     setAlertConfig({ title, message, buttons });
     setShowAlert(true);
-  };
-
-  const handleDeposit = () => {
-    showCustomAlert('Deposit', 'Deposit functionality will be implemented here', [
-      { text: 'OK', onPress: () => {} }
-    ]);
   };
 
   const handleReceive = () => {
@@ -108,50 +73,45 @@ export default function Wallet({ }: WalletProps) {
 
   const handleTransfer = () => {
     showCustomAlert('Transfer', 'Transfer functionality will be implemented here', [
-      { text: 'OK', onPress: () => {} }
+      { text: 'OK', onPress: () => { } }
     ]);
   };
 
   const handlePortfolio = () => {
     showCustomAlert('Portfolio', 'Portfolio view will be implemented here', [
-      { text: 'OK', onPress: () => {} }
+      { text: 'OK', onPress: () => { } }
     ]);
   };
 
-  // Convert Circle SDK token balances to crypto assets format
+  // Convert real token balances to crypto assets format
   const cryptoAssets: CryptoAsset[] = tokenBalances.map((balance, index) => {
+    const token = balance.token;
     const amount = parseFloat(balance.amount);
-    const mockPrice = getMockTokenPrice(balance.tokenSymbol);
-    const usdValue = amount * mockPrice;
-    const mockChange = Math.random() * 0.1 - 0.05; // Random change between -5% and +5%
-    const isPositive = mockChange >= 0;
     
+    // Mock price calculation based on token symbol
+    let pricePerToken = 1;
+    if (token.symbol.includes('ETH')) pricePerToken = 2500;
+    else if (token.symbol === 'USDC') pricePerToken = 1;
+    else if (token.symbol === 'POL') pricePerToken = 0.5;
+    else if (token.symbol === 'SOL') pricePerToken = 100;
+    else if (token.symbol === 'EURC') pricePerToken = 1.1;
+    
+    const usdValue = amount * pricePerToken;
+    const change = '+2.5%'; // Mock change for now
+    const isPositive = true;
+
     return {
-      id: balance.tokenId || index.toString(),
-      name: balance.tokenName,
-      symbol: balance.tokenSymbol,
-      amount: `${balance.amount} ${balance.tokenSymbol}`,
+      id: token.id || index.toString(),
+      name: token.name,
+      symbol: token.symbol,
+      amount: `${balance.amount} ${token.symbol}`,
       value: `$${usdValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-      change: `${isPositive ? '+' : ''}${(mockChange * 100).toFixed(2)}%`,
-      changePercent: `${isPositive ? '+' : ''}${(mockChange * 100).toFixed(2)}%`,
+      change: change,
+      changePercent: change,
       isPositive: isPositive,
-      imageUrl: balance.imageUrl || `https://cryptologos.cc/logos/${balance.tokenSymbol.toLowerCase()}-${balance.tokenSymbol.toLowerCase()}-logo.png`
+      imageUrl: `https://cryptologos.cc/logos/${token.symbol.toLowerCase().replace('-', '-')}-${token.symbol.toLowerCase().replace('-', '-')}-logo.png`
     };
   });
-
-  // Mock token prices (in production, use real price API)
-  function getMockTokenPrice(symbol: string): number {
-    const prices: { [key: string]: number } = {
-      'ETH': 2500,
-      'BTC': 45000,
-      'USDC': 1,
-      'USDT': 1,
-      'MATIC': 0.8,
-      'AVAX': 25,
-      'SOL': 100
-    };
-    return prices[symbol] || 1;
-  }
 
   const cashAssets: CryptoAsset[] = [
     {
@@ -170,8 +130,8 @@ export default function Wallet({ }: WalletProps) {
   const renderCryptoItem = ({ item }: { item: CryptoAsset }) => (
     <TouchableOpacity style={styles.cryptoItem}>
       <View style={styles.cryptoIcon}>
-        <Image 
-          source={{ uri: item.imageUrl }} 
+        <Image
+          source={{ uri: item.imageUrl }}
           style={styles.cryptoImage}
           resizeMode="contain"
         />
@@ -192,6 +152,69 @@ export default function Wallet({ }: WalletProps) {
     </TouchableOpacity>
   );
 
+  useEffect(() => {
+    const fetchWalletData = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        
+        const response = await fetch(`${API_BASE_URL}/api/wallets/wallets/${session.userId}/balance`);
+        const data = await response.json();
+        
+        if (data.success && data.walletData) {
+          console.log('Wallet data received:', data.walletData);
+          
+          // Set wallets data
+          setWallets(data.walletData);
+          
+          // Select first wallet by default
+          if (data.walletData.length > 0) {
+            setSelectedWallet(data.walletData[0]);
+            
+            // Flatten all token balances from all wallets
+            const allTokens = data.walletData.flatMap((wallet: any) => 
+              wallet.tokenBalances.map((tokenBalance: any) => ({
+                ...tokenBalance,
+                walletId: wallet.walletId,
+                walletAddress: wallet.walletAddress,
+                blockchain: wallet.blockchain,
+                accountType: wallet.accountType
+              }))
+            );
+            
+            setTokenBalances(allTokens);
+            console.log('All tokens:', allTokens);
+          }
+        } else {
+          setError('Failed to fetch wallet data');
+        }
+      } catch (err) {
+        console.error('Error fetching wallet data:', err);
+        setError('Network error occurred');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (session?.userId) {
+      fetchWalletData();
+    }
+  }, [session?.userId]);
+
+  // Calculate total balance when tokenBalances change
+  useEffect(() => {
+    if (tokenBalances.length > 0) {
+      const totalValue = cryptoAssets.reduce((sum, asset) => {
+        const value = parseFloat(asset.value.replace('$', '').replace(',', ''));
+        return sum + value;
+      }, 0);
+      
+      setTotalBalance(`$${totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
+      setTotalBalanceChange('+125.50'); // Mock change for now
+      setTotalBalancePercent('+1.76%'); // Mock change for now
+    }
+  }, [tokenBalances]);
+
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* Main Balance Card */}
@@ -202,106 +225,96 @@ export default function Wallet({ }: WalletProps) {
       >
         {/* Dark overlay */}
         <View style={styles.overlay}>
-        <View style={styles.balanceHeader}>
-          <Text style={styles.balanceLabel}>Total value</Text>
-          <View style={styles.balanceHeaderRight}>
-            {/* Connection Status Indicator */}
-            <View style={[styles.connectionIndicator, { 
-              backgroundColor: selectedWallet ? '#4CAF50' : '#F44336' 
-            }]}>
-              <Ionicons 
-                name={selectedWallet ? "wifi" : "wifi"} 
-                size={12} 
-                color="#FFFFFF" 
-              />
+          <View style={styles.balanceHeader}>
+            <Text style={styles.balanceLabel}>Total value</Text>
+            <View style={styles.balanceHeaderRight}>
+              <TouchableOpacity style={styles.eyeButton} onPress={toggleBalanceVisibility}>
+                <Ionicons
+                  name={isBalanceVisible ? "eye-outline" : "eye-off-outline"}
+                  size={20}
+                  color="#fff"
+                />
+              </TouchableOpacity>
             </View>
-            <TouchableOpacity style={styles.eyeButton} onPress={toggleBalanceVisibility}>
-              <Ionicons
-                name={isBalanceVisible ? "eye-outline" : "eye-off-outline"}
-                size={20}
-                color="#fff"
-              />
-            </TouchableOpacity>
           </View>
-        </View>
 
-        <View style={styles.balanceRow}>
-          <AnimatedBalance 
-            value={isBalanceVisible ? totalBalance : '••••••'}
-            style={styles.balanceValue}
-            animationDuration={300}
-          />
-          <View style={styles.balanceChangeContainer}>
-            <Text style={[
-              styles.balanceChangePositive,
-              totalBalanceChange.startsWith('-') && styles.balanceChangeNegative
-            ]}>
-              {totalBalanceChange}
-            </Text>
-            <Text style={[
-              styles.balanceChangePercent,
-              totalBalancePercent.startsWith('-') && styles.balanceChangePercentNegative
-            ]}>
-              {totalBalancePercent} Last 24h
-            </Text>
-            {selectedWallet && (
-              <Text style={styles.lastUpdate}>
-                Updated {new Date().toLocaleTimeString()}
+          <View style={styles.balanceRow}>
+            <AnimatedBalance
+              value={isBalanceVisible ? totalBalance : '••••••'}
+              style={styles.balanceValue}
+              animationDuration={300}
+            />
+            <View style={styles.balanceChangeContainer}>
+              <Text style={[
+                styles.balanceChangePositive,
+                totalBalanceChange.startsWith('-') && styles.balanceChangeNegative
+              ]}>
+                {totalBalanceChange}
               </Text>
-            )}
+              <Text style={[
+                styles.balanceChangePercent,
+                totalBalancePercent.startsWith('-') && styles.balanceChangePercentNegative
+              ]}>
+                {totalBalancePercent} Last 24h
+              </Text>
+              {selectedWallet && (
+                <Text style={styles.lastUpdate}>
+                  Updated {new Date().toLocaleTimeString()}
+                </Text>
+              )}
+            </View>
           </View>
-        </View>
 
 
-        {/* Action Buttons */}
-        <View style={styles.actionButtons}>
-          <TouchableOpacity style={styles.actionButton} onPress={handleSend}>
-            <View style={styles.actionButtonIcon}>
-              <Ionicons name="arrow-up" size={20} color="#fff" />
-            </View>
-            <Text style={styles.actionButtonText}>Send</Text>
-          </TouchableOpacity>
+          {/* Action Buttons */}
+          <View style={styles.actionButtons}>
+            <TouchableOpacity style={styles.actionButton} onPress={handleSend}>
+              <View style={styles.actionButtonIcon}>
+                <Ionicons name="arrow-up" size={20} color="#fff" />
+              </View>
+              <Text style={styles.actionButtonText}>Send</Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity style={styles.actionButton} onPress={handleReceive}>
-            <View style={styles.actionButtonIcon}>
-              <Ionicons name="arrow-down" size={20} color="#fff" />
-            </View>
-            <Text style={styles.actionButtonText}>Receive</Text>
-          </TouchableOpacity>
+            <TouchableOpacity style={styles.actionButton} onPress={handleReceive}>
+              <View style={styles.actionButtonIcon}>
+                <Ionicons name="arrow-down" size={20} color="#fff" />
+              </View>
+              <Text style={styles.actionButtonText}>Receive</Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity style={styles.actionButton} onPress={handleTransfer}>
-            <View style={styles.actionButtonIcon}>
-              <Ionicons name="git-compare-outline" size={20} color="#fff" />
-            </View>
-            <Text style={styles.actionButtonText}>Swap</Text>
-          </TouchableOpacity>
+            <TouchableOpacity style={styles.actionButton} onPress={handleTransfer}>
+              <View style={styles.actionButtonIcon}>
+                <Ionicons name="git-compare-outline" size={20} color="#fff" />
+              </View>
+              <Text style={styles.actionButtonText}>Swap</Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity style={styles.actionButton} onPress={handlePortfolio}>
-            <View style={styles.actionButtonIcon}>
-              <Ionicons name="card-outline" size={20} color="#fff" />
-            </View>
-            <Text style={styles.actionButtonText}>Buy</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Error Display */}
-        {error && (
-          <View style={styles.errorContainer}>
-            <Ionicons name="warning" size={16} color="#FF3B30" />
-            <Text style={styles.errorText}>{error}</Text>
-            <TouchableOpacity onPress={refreshTokenBalances}>
-              <Ionicons name="refresh" size={16} color="#FF3B30" />
+            <TouchableOpacity style={styles.actionButton} onPress={handlePortfolio}>
+              <View style={styles.actionButtonIcon}>
+                <Ionicons name="card-outline" size={20} color="#fff" />
+              </View>
+              <Text style={styles.actionButtonText}>Buy</Text>
             </TouchableOpacity>
           </View>
-        )}
 
-        {/* Loading Indicator */}
-        {isLoading && (
-          <View style={styles.loadingContainer}>
-            <Ionicons name="refresh" size={16} color="#FFFFFF" />
-            <Text style={styles.loadingText}>Loading wallet data...</Text>
-          </View>
-        )}
+          {/* Error Display */}
+          {error && (
+            <View style={styles.errorContainer}>
+              <Ionicons name="warning" size={16} color="#FF3B30" />
+              <Text style={styles.errorText}>{error}</Text>
+              <TouchableOpacity onPress={() => { }}>
+                <Ionicons name="refresh" size={16} color="#FF3B30" />
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* Loading Indicator */}
+          {isLoading && (
+            <View style={styles.loadingContainer}>
+              <Ionicons name="refresh" size={16} color="#FFFFFF" />
+              <Text style={styles.loadingText}>Loading wallet data...</Text>
+            </View>
+          )}
         </View>
       </ImageBackground>
 
@@ -327,11 +340,77 @@ export default function Wallet({ }: WalletProps) {
 
       {/* Assets List */}
       <View style={styles.assetsContainer}>
-        {(activeTab === 'crypto' ? cryptoAssets : cashAssets).map((item) => (
-          <View key={item.id}>
-            {renderCryptoItem({ item })}
+        {isLoading ? (
+          <View style={styles.loadingContainer}>
+            <Text style={styles.loadingText}>Loading your tokens...</Text>
           </View>
-        ))}
+        ) : error ? (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>Error: {error}</Text>
+            <TouchableOpacity 
+              style={styles.retryButton}
+              onPress={() => {
+                if (session?.userId) {
+                  // Retry fetch
+                  const fetchWalletData = async () => {
+                    try {
+                      setIsLoading(true);
+                      setError(null);
+                      
+                      const response = await fetch(`${API_BASE_URL}/api/wallets/wallets/${session.userId}/balance`);
+                      const data = await response.json();
+                      
+                      if (data.success && data.walletData) {
+                        setWallets(data.walletData);
+                        
+                        if (data.walletData.length > 0) {
+                          setSelectedWallet(data.walletData[0]);
+                          
+                          const allTokens = data.walletData.flatMap((wallet: any) => 
+                            wallet.tokenBalances.map((tokenBalance: any) => ({
+                              ...tokenBalance,
+                              walletId: wallet.walletId,
+                              walletAddress: wallet.walletAddress,
+                              blockchain: wallet.blockchain,
+                              accountType: wallet.accountType
+                            }))
+                          );
+                          
+                          setTokenBalances(allTokens);
+                        }
+                      } else {
+                        setError('Failed to fetch wallet data');
+                      }
+                    } catch (err) {
+                      console.error('Error fetching wallet data:', err);
+                      setError('Network error occurred');
+                    } finally {
+                      setIsLoading(false);
+                    }
+                  };
+                  fetchWalletData();
+                }
+              }}
+            >
+              <Text style={styles.retryButtonText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (activeTab === 'crypto' ? cryptoAssets : cashAssets).length > 0 ? (
+          (activeTab === 'crypto' ? cryptoAssets : cashAssets).map((item) => (
+            <View key={item.id}>
+              {renderCryptoItem({ item })}
+            </View>
+          ))
+        ) : (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>
+              {activeTab === 'crypto' ? 'No crypto tokens found' : 'No cash assets found'}
+            </Text>
+            <Text style={styles.emptySubtext}>
+              {activeTab === 'crypto' ? 'Deposit your first crypto to get started' : 'Add cash assets to your portfolio'}
+            </Text>
+          </View>
+        )}
       </View>
 
       <CustomAlert
@@ -550,16 +629,42 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   loadingContainer: {
-    flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    padding: 12,
-    borderRadius: 8,
-    marginTop: 16,
+    justifyContent: 'center',
+    padding: 40,
   },
   loadingText: {
     color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 40,
+  },
+  emptyText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  emptySubtext: {
+    color: '#CCCCCC',
     fontSize: 14,
-    marginLeft: 8,
+    textAlign: 'center',
+  },
+  retryButton: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginTop: 12,
+  },
+  retryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });

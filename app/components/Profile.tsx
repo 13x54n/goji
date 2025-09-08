@@ -7,7 +7,6 @@ import {
 } from 'react-native';
 import { sessionService } from '../../lib/sessionService';
 import CustomAlert from './CustomAlert';
-
 interface ProfileProps {
   session: any;
   onLogout: () => void;

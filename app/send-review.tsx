@@ -3,13 +3,13 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  Image,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View
+    ActivityIndicator,
+    Image,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import { transactionService } from '../lib/transactionService';
 import { websocketService } from '../lib/websocketService';
@@ -19,6 +19,13 @@ export default function SendReview() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const [isSending, setIsSending] = useState(false);
+  
+  // Mock wallet data
+  const selectedWallet = { id: 'mock-wallet-1' };
+  const tokenBalances = [
+    { tokenSymbol: 'ETH', tokenId: 'eth-1' },
+    { tokenSymbol: 'USDC', tokenId: 'usdc-1' }
+  ];
   const [showSuccessAlert, setShowSuccessAlert] = useState(false);
   const [transactionId, setTransactionId] = useState<string | null>(null);
   const [transactionStatus, setTransactionStatus] = useState<string>('INITIATED');
@@ -65,14 +72,22 @@ export default function SendReview() {
     setTransactionStatus('INITIATED');
     
     try {
-      // For demo purposes, we'll use a mock wallet ID
-      // In a real app, you'd get this from the user's wallet selection
-      const mockWalletId = 'demo-wallet-id';
-      const mockTokenId = 'demo-token-id';
+      if (!selectedWallet) {
+        throw new Error('No wallet selected');
+      }
+      
+      // Find the selected token from the wallet's token balances
+      const selectedToken = tokenBalances.find(token => 
+        token.tokenSymbol === (params.tokenSymbol as string)
+      );
+      
+      if (!selectedToken) {
+        throw new Error('Selected token not found in wallet');
+      }
       
       const transaction = await transactionService.createTransaction({
-        walletId: mockWalletId,
-        tokenId: mockTokenId,
+        walletId: selectedWallet.id,
+        tokenId: selectedToken.tokenId,
         destinationAddress: contactAddress,
         amount: amount,
         note: note,

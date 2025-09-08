@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ScrollView,
   StyleSheet,
@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+import { API_BASE_URL } from '../config/api';
 import CustomAlert from './components/CustomAlert';
 
 interface Token {
@@ -22,50 +23,11 @@ interface Token {
   icon: string;
   address: string;
   price: number;
+  blockchain: string;
+  walletId: string;
+  walletAddress: string;
 }
 
-const MOCK_TOKENS: Token[] = [
-  {
-    id: '1',
-    symbol: 'ETH',
-    name: 'Ethereum',
-    balance: '2.5',
-    balanceUSD: '6,250.00',
-    icon: 'https://imgs.search.brave.com/5zdHHoIlKZYAd0DQ3SblHsKOshWYOOQscgeaNi0ZFwU/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9jZG4u/d29ybGR2ZWN0b3Js/b2dvLmNvbS9sb2dv/cy9ldGhlcmV1bS1l/dGguc3Zn',
-    address: '0x0000000000000000000000000000000000000000',
-    price: 2500
-  },
-  {
-    id: '2',
-    symbol: 'USDC',
-    name: 'USD Coin',
-    balance: '1,000.00',
-    balanceUSD: '1,000.00',
-    icon: 'https://imgs.search.brave.com/8NYhXqk1fx3dnUnHGJsOpkqHbNED7y5Mphrj0q3UQWQ/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly91cGxv/YWQud2lraW1lZGlh/Lm9yZy93aWtpcGVk/aWEvY29tbW9ucy80/LzRhL0NpcmNsZV9V/U0RDX0xvZ28uc3Zn',
-    address: '0xA0b86a33E6441b8C4C8C0C4C8C0C4C8C0C4C8C0C',
-    price: 1
-  },
-  {
-    id: '3',
-    symbol: 'USDT',
-    name: 'Tether',
-    balance: '500.00',
-    balanceUSD: '500.00',
-    icon: 'https://imgs.search.brave.com/Vs-coi7cKHUnncyJJL0HSrhE-9MYuyI1iDKKGjncbQw/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9jZG4u/ZnJlZWxvZ292ZWN0/b3JzLm5ldC93cC1j/b250ZW50L3VwbG9h/ZHMvMjAyMS8xMC91/c2R0LXRldGhlci1s/b2dvLWZyZWVsb2dv/dmVjdG9ycy5uZXRf/LTQwMHg0MDAucG5n',
-    address: '0xdAC17F958D2ee523a2206206994597C13D831ec7',
-    price: 1
-  },
-  {
-    id: '4',
-    symbol: 'BTC',
-    name: 'Bitcoin',
-    balance: '0.15',
-    balanceUSD: '9,750.00',
-    icon: 'https://imgs.search.brave.com/GiMlVMw-Wa4DzuCVjYrYjLGFEvcpZJmMEP49yN6jaNE/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9wbmdp/bWcuY29tL3VwbG9h/ZHMvYml0Y29pbi9z/bWFsbC9iaXRjb2lu/X1BORzM4LnBuZw',
-    address: '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599',
-    price: 65000
-  },
-];
 
 export default function SendToken() {
   const router = useRouter();
@@ -84,6 +46,77 @@ export default function SendToken() {
   const contactName = params.contactName as string;
   const contactAddress = params.contactAddress as string;
 
+  // Real token data from API
+  const [availableTokens, setAvailableTokens] = useState<Token[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Get session from params or use a default for now
+  const session = { userId: '68b8b67390daa0d92d410679' }; // This should come from session management
+
+  // Fetch real token data from API
+  useEffect(() => {
+    const fetchTokenData = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        
+        const response = await fetch(`${API_BASE_URL}/api/wallets/wallets/${session.userId}/balance`);
+        const data = await response.json();
+        
+        if (data.success && data.walletData) {
+          console.log('Token data received for send-token:', data.walletData);
+          
+          // Flatten all token balances from all wallets and convert to Token format
+          const allTokens = data.walletData.flatMap((wallet: any) => 
+            wallet.tokenBalances.map((tokenBalance: any) => {
+              const token = tokenBalance.token;
+              const amount = parseFloat(tokenBalance.amount);
+              
+              // Mock price calculation based on token symbol
+              let pricePerToken = 1;
+              if (token.symbol.includes('ETH')) pricePerToken = 2500;
+              else if (token.symbol === 'USDC') pricePerToken = 1;
+              else if (token.symbol === 'POL') pricePerToken = 0.5;
+              else if (token.symbol === 'SOL') pricePerToken = 100;
+              else if (token.symbol === 'EURC') pricePerToken = 1.1;
+              
+              const usdValue = amount * pricePerToken;
+              
+              return {
+                id: token.id,
+                symbol: token.symbol,
+                name: token.name,
+                balance: tokenBalance.amount,
+                balanceUSD: usdValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+                icon: `https://cryptologos.cc/logos/${token.symbol.toLowerCase().replace('-', '-')}-${token.symbol.toLowerCase().replace('-', '-')}-logo.png`,
+                address: token.tokenAddress || '0x0000000000000000000000000000000000000000',
+                price: pricePerToken,
+                blockchain: wallet.blockchain,
+                walletId: wallet.walletId,
+                walletAddress: wallet.walletAddress
+              };
+            })
+          );
+          
+          setAvailableTokens(allTokens);
+          console.log('Available tokens for sending:', allTokens);
+        } else {
+          setError('Failed to fetch token data');
+        }
+      } catch (err) {
+        console.error('Error fetching token data:', err);
+        setError('Network error occurred');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (session?.userId) {
+      fetchTokenData();
+    }
+  }, [session?.userId]);
+
   const handleTokenSelect = (token: Token) => {
     setSelectedToken(token);
     setShowTokenModal(false);
@@ -101,6 +134,10 @@ export default function SendToken() {
         tokenPrice: token.price.toString(),
         tokenBalance: token.balance,
         tokenBalanceUSD: token.balanceUSD,
+        blockchain: token.blockchain,
+        walletId: token.walletId,
+        walletAddress: token.walletAddress,
+        tokenAddress: token.address,
       }
     });
   };
@@ -194,21 +231,97 @@ export default function SendToken() {
           </View>
 
           <View style={styles.tokenSection}>
-            {MOCK_TOKENS.map((token) => (
-              <TouchableOpacity key={token.id} style={styles.tokenButton} onPress={() => handleTokenSelect(token)}>
-                <View style={styles.selectedToken}>
-                  <Image source={{ uri: token.icon }} style={styles.tokenIcon} />
-                  <View>
-                    <Text style={styles.tokenName}>{token.name}</Text>
-                    <Text style={styles.tokenSymbol}>{token.symbol}</Text>
+            {isLoading ? (
+              <View style={styles.loadingContainer}>
+                <Text style={styles.loadingText}>Loading your tokens...</Text>
+              </View>
+            ) : error ? (
+              <View style={styles.errorContainer}>
+                <Text style={styles.errorText}>Error: {error}</Text>
+                <TouchableOpacity 
+                  style={styles.retryButton}
+                  onPress={() => {
+                    if (session?.userId) {
+                      // Retry fetch
+                      const fetchTokenData = async () => {
+                        try {
+                          setIsLoading(true);
+                          setError(null);
+                          
+                          const response = await fetch(`${API_BASE_URL}/api/wallets/wallets/${session.userId}/balance`);
+                          const data = await response.json();
+                          
+                          if (data.success && data.walletData) {
+                            const allTokens = data.walletData.flatMap((wallet: any) => 
+                              wallet.tokenBalances.map((tokenBalance: any) => {
+                                const token = tokenBalance.token;
+                                const amount = parseFloat(tokenBalance.amount);
+                                
+                                let pricePerToken = 1;
+                                if (token.symbol.includes('ETH')) pricePerToken = 2500;
+                                else if (token.symbol === 'USDC') pricePerToken = 1;
+                                else if (token.symbol === 'POL') pricePerToken = 0.5;
+                                else if (token.symbol === 'SOL') pricePerToken = 100;
+                                else if (token.symbol === 'EURC') pricePerToken = 1.1;
+                                
+                                const usdValue = amount * pricePerToken;
+                                
+                                return {
+                                  id: token.id,
+                                  symbol: token.symbol,
+                                  name: token.name,
+                                  balance: tokenBalance.amount,
+                                  balanceUSD: usdValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+                                  icon: `https://cryptologos.cc/logos/${token.symbol.toLowerCase().replace('-', '-')}-${token.symbol.toLowerCase().replace('-', '-')}-logo.png`,
+                                  address: token.tokenAddress || '0x0000000000000000000000000000000000000000',
+                                  price: pricePerToken,
+                                  blockchain: wallet.blockchain,
+                                  walletId: wallet.walletId,
+                                  walletAddress: wallet.walletAddress
+                                };
+                              })
+                            );
+                            
+                            setAvailableTokens(allTokens);
+                          } else {
+                            setError('Failed to fetch token data');
+                          }
+                        } catch (err) {
+                          console.error('Error fetching token data:', err);
+                          setError('Network error occurred');
+                        } finally {
+                          setIsLoading(false);
+                        }
+                      };
+                      fetchTokenData();
+                    }
+                  }}
+                >
+                  <Text style={styles.retryButtonText}>Retry</Text>
+                </TouchableOpacity>
+              </View>
+            ) : availableTokens.length > 0 ? (
+              availableTokens.map((token) => (
+                <TouchableOpacity key={token.id} style={styles.tokenButton} onPress={() => handleTokenSelect(token)}>
+                  <View style={styles.selectedToken}>
+                    <Image source={{ uri: token.icon }} style={styles.tokenIcon} />
+                    <View>
+                      <Text style={styles.tokenName}>{token.name}</Text>
+                      <Text style={styles.tokenSymbol}>{token.symbol}</Text>
+                    </View>
                   </View>
-                </View>
-                <View style={styles.tokenBalance}>
-                  <Text style={styles.balanceUSD}>${token.balanceUSD}</Text>
-                  <Text style={styles.balanceText}>{token.balance} {token.symbol}</Text>
-                </View>
-              </TouchableOpacity>
-            ))}
+                  <View style={styles.tokenBalance}>
+                    <Text style={styles.balanceUSD}>${token.balanceUSD}</Text>
+                    <Text style={styles.balanceText}>{token.balance} {token.symbol}</Text>
+                  </View>
+                </TouchableOpacity>
+              ))
+            ) : (
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>No tokens available</Text>
+                <Text style={styles.emptySubtext}>You need to have tokens in your wallet to send</Text>
+              </View>
+            )}
           </View>
         </ScrollView>
 
@@ -466,5 +579,55 @@ const styles = StyleSheet.create({
     backgroundColor: '#1a1a1a',
     borderRadius: 12,
     paddingLeft: 16,
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 40,
+  },
+  loadingText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  errorContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 40,
+  },
+  errorText: {
+    color: '#FF3B30',
+    fontSize: 16,
+    fontWeight: '500',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  retryButton: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 40,
+  },
+  emptyText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  emptySubtext: {
+    color: '#CCCCCC',
+    fontSize: 14,
+    textAlign: 'center',
   },
 });

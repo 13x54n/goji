@@ -3,19 +3,18 @@ import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
 import {
-    BackHandler,
-    KeyboardAvoidingView,
-    Platform,
-    SafeAreaView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  BackHandler,
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import { sessionService } from '../lib/sessionService';
 import AIChat from './components/AIChat';
 import MenuDrawer from './components/MenuDrawer';
-import PriceTicker from './components/PriceTicker';
 import Profile from './components/Profile';
 import RealTimeTransactions from './components/RealTimeTransactions';
 import Wallet from './components/Wallet';
@@ -30,7 +29,7 @@ interface TabItem {
 const tabs: TabItem[] = [
   { id: 'wallet', title: 'Wallet', icon: 'wallet-outline', activeIcon: 'wallet' },
   { id: 'ai', title: 'AI', icon: 'chatbubble-outline', activeIcon: 'chatbubble' },
-  { id: 'transactions', title: 'Transactions', icon: 'receipt-outline', activeIcon: 'list' },
+  { id: 'transactions', title: 'Transactions', icon: 'receipt-outline', activeIcon: 'receipt' },
   { id: 'profile', title: 'Profile', icon: 'person-outline', activeIcon: 'person' },
 ];
 
@@ -77,7 +76,7 @@ export default function HomeScreen() {
       case 'ai':
         return <AIChat />;
       case 'wallet':
-        return <Wallet />;
+        return <Wallet session={session} />;
       case 'transactions':
         return <RealTimeTransactions walletId="demo-wallet-id" />;
       case 'profile':

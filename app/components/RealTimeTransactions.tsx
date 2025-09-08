@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRealTimeWallet } from '../../lib/useRealTimeWallet';
+import React, { useState } from 'react';
+import { RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import TransactionStatus from './TransactionStatus';
 
 export interface RealTimeTransactionsProps {
@@ -15,19 +14,43 @@ export default function RealTimeTransactions({
   showHeader = true,
   maxTransactions = 10
 }: RealTimeTransactionsProps) {
-  const {
-    transactions,
-    transactionUpdate,
-    isTransactionLoading,
-    transactionError,
-    refreshTransactions,
-    cancelTransaction,
-    accelerateTransaction
-  } = useRealTimeWallet({
-    walletId: walletId || 'demo-wallet-id',
-    autoRefresh: true,
-    refreshInterval: 30000
-  });
+  // Mock transaction data
+  const [transactions] = useState([
+    {
+      id: 'tx-1',
+      state: 'COMPLETED',
+      amount: '0.5',
+      destinationAddress: '0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8b6',
+      note: 'Payment for services',
+      timestamp: new Date().toISOString()
+    },
+    {
+      id: 'tx-2',
+      state: 'PENDING',
+      amount: '1.0',
+      destinationAddress: '0x1234567890123456789012345678901234567890',
+      note: 'Transfer to friend',
+      timestamp: new Date(Date.now() - 300000).toISOString()
+    }
+  ]);
+  const [transactionUpdate] = useState(false);
+  const [isTransactionLoading] = useState(false);
+  const [transactionError] = useState(null);
+
+  const refreshTransactions = async () => {
+    // Mock refresh function
+    console.log('Refreshing transactions...');
+  };
+
+  const cancelTransaction = async (transactionId: string) => {
+    // Mock cancel function
+    console.log('Cancelling transaction:', transactionId);
+  };
+
+  const accelerateTransaction = async (transactionId: string) => {
+    // Mock accelerate function
+    console.log('Accelerating transaction:', transactionId);
+  };
 
   const [refreshing, setRefreshing] = useState(false);
 

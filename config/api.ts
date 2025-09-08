@@ -1,5 +1,5 @@
 // API Configuration
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
+export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
 
 // API Endpoints
 export const API_ENDPOINTS = {
@@ -20,4 +20,6 @@ export const API_ENDPOINTS = {
     TEST: `${API_BASE_URL}/api/email/test`,
   },
   HEALTH: `${API_BASE_URL}/health`,
+  WALLETS: `${API_BASE_URL}/api/wallets`,
+  WALLETS_FOR_USER: (email: string) => `${API_BASE_URL}/api/wallets/user/${email}`,
 };

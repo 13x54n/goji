@@ -7,10 +7,10 @@ import path from 'path';
 import { Server as SocketIOServer } from 'socket.io';
 import { databaseLogger, devLogger, errorLogger, prodLogger } from './middleware/logger';
 import authRoutes from './routes/authRoutes';
-import circleWalletRoutes from './routes/circleWalletRoutes';
 import emailRoutes from './routes/emailRoutes';
 import logRoutes from './routes/logRoutes';
 import passkeyRoutes from './routes/passkeyRoutes';
+import walletApiRoutes from './routes/walletApiRoutes';
 import walletRoutes from './routes/walletRoutes';
 import { WalletMonitoringService } from './services/walletMonitoringService';
 
@@ -71,7 +71,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/email', emailRoutes);
 app.use('/api/logs', logRoutes);
 app.use('/api/wallets', walletRoutes);
-app.use('/api/circle', circleWalletRoutes);
+app.use('/api', walletApiRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
