@@ -56,7 +56,6 @@ const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/goji';
 
 mongoose.connect(MONGODB_URI)
   .then(() => {
-    console.log('Connected to MongoDB');
   })
   .catch((error) => {
     console.error('MongoDB connection error:', error);
@@ -85,8 +84,6 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 });
 
 server.listen(Number(PORT), '0.0.0.0', () => {
-  console.log(`Server is running on port ${PORT}`);
-  console.log(`WebSocket server is running on port ${PORT}`);
   
   // Get the actual local IP address dynamically
   const os = require('os');
@@ -105,9 +102,6 @@ server.listen(Number(PORT), '0.0.0.0', () => {
     }
     if (localIP !== 'localhost') break;
   }
-  
-  console.log(`Server accessible at: http://${localIP}:${PORT}`);
-  console.log(`WebSocket accessible at: ws://${localIP}:${PORT}`);
 });
 
 // Export for use in other modules

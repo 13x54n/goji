@@ -26,7 +26,6 @@ export class WalletService {
   // Get all wallets for a specific user by email
   async getWalletsForUser(email: string): Promise<WalletInfo[]> {
     try {
-      console.log('Fetching wallets for user:', email);
       
       // Find user by email
       const user = await User.findOne({ email });
@@ -38,11 +37,8 @@ export class WalletService {
       const userWallets = await Wallet.find({ userId: user._id });
       
       if (userWallets.length === 0) {
-        console.log('No wallets found for user:', user.email);
         return [];
       }
-
-      console.log(`Retrieved ${userWallets.length} wallets from database`);
 
       // Convert to WalletInfo format
       const walletInfos = userWallets.map(wallet => this.createWalletInfo(wallet));
@@ -57,7 +53,6 @@ export class WalletService {
   // Get all wallets (for demo purposes)
   async getAllWallets(): Promise<WalletInfo[]> {
     try {
-      console.log('Fetching all wallets');
       
       // Find the first user or create a demo user
       let user = await User.findOne();
@@ -69,12 +64,9 @@ export class WalletService {
       const userWallets = await Wallet.find({ userId: user._id });
       
       if (userWallets.length === 0) {
-        console.log('No wallets found, creating demo wallet');
         const demoWallet = await this.createDemoWallet(user._id);
         userWallets.push(demoWallet);
       }
-
-      console.log(`Retrieved ${userWallets.length} wallets from database`);
 
       // Convert to WalletInfo format
       const walletInfos = userWallets.map(wallet => this.createWalletInfo(wallet));
@@ -159,7 +151,6 @@ export class WalletService {
     });
     
     await demoUser.save();
-    console.log('Created demo user:', demoUser.email);
     return demoUser;
   }
 
@@ -178,7 +169,6 @@ export class WalletService {
     });
     
     await demoWallet.save();
-    console.log('Created demo wallet:', demoWallet.id);
     return demoWallet;
   }
 }

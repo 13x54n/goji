@@ -19,6 +19,14 @@ export interface WalletUpdate {
   lastUpdated: string;
 }
 
+export interface TokenChange {
+  walletId: string;
+  blockchain: string;
+  newTokens: any[];
+  removedTokens: any[];
+  timestamp: string;
+}
+
 export interface TransactionUpdate {
   transactionId: string;
   walletId: string;
@@ -37,6 +45,7 @@ export class WalletMonitoringService {
   private activeConnections: Map<string, Set<string>> = new Map(); // userId -> Set of socketIds
   private priceInterval: NodeJS.Timeout | null = null;
   private currentPrices: Map<string, PriceUpdate> = new Map();
+  private walletTokenCache: Map<string, any[]> = new Map(); // walletId -> previous token balances
 
   constructor(io: SocketIOServer) {
     this.io = io;
@@ -46,7 +55,6 @@ export class WalletMonitoringService {
 
   private setupSocketHandlers() {
     this.io.on('connection', (socket) => {
-      console.log(`Client connected: ${socket.id}`);
 
       // Handle user authentication and wallet subscription
       socket.on('subscribe-wallets', async (data: { userId: string }) => {
@@ -140,7 +148,6 @@ export class WalletMonitoringService {
 
       // Handle disconnection
       socket.on('disconnect', () => {
-        console.log(`Client disconnected: ${socket.id}`);
         
         // Remove from active connections
         for (const [userId, socketIds] of this.activeConnections.entries()) {
@@ -161,8 +168,6 @@ export class WalletMonitoringService {
       return;
     }
 
-    console.log(`Starting wallet monitoring for ${walletId} on ${blockchain}`);
-
     // Monitor wallet every 30 seconds
     const interval = setInterval(async () => {
       try {
@@ -182,6 +187,9 @@ export class WalletMonitoringService {
     try {
       // Get current balance
       const balance = await TransactionService.getWalletBalance(walletId);
+      
+      // Check for token changes
+      const tokenChanges = this.detectTokenChanges(walletId, balance);
       
       // Get recent transactions
       const transactions = await TransactionService.listTransactions([walletId], 10);
@@ -205,6 +213,11 @@ export class WalletMonitoringService {
         // Send update to user's room
         this.io.to(`user-${user._id}`).emit('wallet-updated', update);
 
+        // Send token changes if any
+        if (tokenChanges && (tokenChanges.newTokens.length > 0 || tokenChanges.removedTokens.length > 0)) {
+          this.io.to(`user-${user._id}`).emit('tokens-changed', tokenChanges);
+        }
+
         // Send recent transactions
         if (transactions.length > 0) {
           this.io.to(`user-${user._id}`).emit('recent-transactions', {
@@ -218,10 +231,43 @@ export class WalletMonitoringService {
     }
   }
 
+  private detectTokenChanges(walletId: string, currentBalance: any[]): TokenChange | null {
+    const previousBalance = this.walletTokenCache.get(walletId) || [];
+    
+    // Create maps for easier comparison
+    const previousTokens = new Map(previousBalance.map(token => [token.tokenId, token]));
+    const currentTokens = new Map(currentBalance.map(token => [token.tokenId, token]));
+    
+    // Find new tokens
+    const newTokens = currentBalance.filter(token => 
+      !previousTokens.has(token.tokenId) && parseFloat(token.amount) > 0
+    );
+    
+    // Find removed tokens (tokens that were present before but not now, or have zero balance)
+    const removedTokens = previousBalance.filter(token => 
+      !currentTokens.has(token.tokenId) || parseFloat(currentTokens.get(token.tokenId)?.amount || '0') === 0
+    );
+    
+    // Update cache
+    this.walletTokenCache.set(walletId, currentBalance);
+    
+    // Return changes if any
+    if (newTokens.length > 0 || removedTokens.length > 0) {
+      return {
+        walletId,
+        blockchain: currentBalance[0]?.blockchain || 'unknown',
+        newTokens,
+        removedTokens,
+        timestamp: new Date().toISOString()
+      };
+    }
+    
+    return null;
+  }
+
   private stopUserWalletMonitoring(userId: string) {
     // This is a simplified approach - in production, you'd want more sophisticated
     // logic to determine when to stop monitoring based on active connections
-    console.log(`Stopping wallet monitoring for user ${userId}`);
   }
 
   public async stopWalletMonitoring(walletId: string) {
@@ -229,7 +275,6 @@ export class WalletMonitoringService {
     if (interval) {
       clearInterval(interval);
       this.monitoringIntervals.delete(walletId);
-      console.log(`Stopped wallet monitoring for ${walletId}`);
     }
   }
 

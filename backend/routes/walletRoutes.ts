@@ -28,7 +28,6 @@ router.get('/user/:userId', async (req, res) => {
         walletsByBlockchain[blockchain].push(wallet);
       }
     }
-    console.log('walletsByBlockchain', walletsByBlockchain);
     res.json({
       success: true,
       wallets: walletsByBlockchain,
@@ -235,8 +234,6 @@ router.get('/wallets/:userId/balance', async (req, res) => {
       return res.status(404).json({ error: 'No wallets found' });
     }
 
-    console.log('wallets', wallets);
-
     /**
      * wallets [
   {
@@ -401,8 +398,6 @@ router.get('/wallets/:userId/balance', async (req, res) => {
             tokenCount: response.data.tokenBalances.length,
             tokenBalances: tokenBalancesWithWallet
           });
-
-          console.log(`Retrieved ${response.data.tokenBalances.length} tokens for wallet ${wallet.id} (${wallet.blockchain})`);
         } else {
           // No tokens found for this wallet
           walletTokenData.push({
@@ -413,7 +408,6 @@ router.get('/wallets/:userId/balance', async (req, res) => {
             tokenCount: 0,
             tokenBalances: []
           });
-          console.log(`No tokens found for wallet ${wallet.id} (${wallet.blockchain})`);
         }
       } catch (error) {
         console.error(`Error fetching tokens for wallet ${wallet.id}:`, error);
@@ -461,8 +455,6 @@ router.get('/wallet-set/:walletSetId/tokens', async (req, res) => {
       entitySecret: process.env.CIRCLE_ENTITY_SECRET || '',
     });
 
-    console.log(`Fetching tokens for wallet set: ${walletSetId} (${wallets.length} wallets)`);
-
     // Fetch token balances for all wallets in the set
     const walletTokenData = [];
 
@@ -492,8 +484,6 @@ router.get('/wallet-set/:walletSetId/tokens', async (req, res) => {
             tokenCount: response.data.tokenBalances.length,
             tokenBalances: tokenBalancesWithWallet
           });
-
-          console.log(`Retrieved ${response.data.tokenBalances.length} tokens for wallet ${wallet.id} (${wallet.blockchain})`);
         } else {
           walletTokenData.push({
             walletId: wallet.id,

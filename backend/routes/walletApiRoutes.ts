@@ -6,7 +6,6 @@ const router = express.Router();
 // Get all wallets (for demo purposes)
 router.get('/wallets', async (req, res) => {
   try {
-    console.log('GET /api/wallets - Fetching all wallets');
     const wallets = await walletService.getAllWallets();
     
     res.json({
@@ -51,7 +50,6 @@ router.get('/wallets/user/:email', async (req, res) => {
 router.get('/wallets/:walletId', async (req, res) => {
   try {
     const { walletId } = req.params;
-    console.log('GET /api/wallets/:walletId - Fetching wallet:', walletId);
     
     const wallet = await walletService.getWalletById(walletId);
     
@@ -81,7 +79,6 @@ router.get('/wallets/:walletId', async (req, res) => {
 router.get('/wallets/:walletId/tokens', async (req, res) => {
   try {
     const { walletId } = req.params;
-    console.log('GET /api/wallets/:walletId/tokens - Fetching token balances for wallet:', walletId);
     
     const wallet = await walletService.getWalletById(walletId);
     

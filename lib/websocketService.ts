@@ -42,6 +42,30 @@ export interface PriceUpdate {
   timestamp: string;
 }
 
+export interface TokenChange {
+  walletId: string;
+  blockchain: string;
+  newTokens: Array<{
+    tokenId: string;
+    amount: string;
+    tokenAddress?: string;
+    tokenName?: string;
+    tokenSymbol?: string;
+    tokenStandard?: string;
+    blockchain?: string;
+  }>;
+  removedTokens: Array<{
+    tokenId: string;
+    amount: string;
+    tokenAddress?: string;
+    tokenName?: string;
+    tokenSymbol?: string;
+    tokenStandard?: string;
+    blockchain?: string;
+  }>;
+  timestamp: string;
+}
+
 export interface WebSocketEvents {
   'subscription-confirmed': (data: { message: string; userId: string }) => void;
   'subscription-error': (data: { error: string }) => void;
@@ -50,6 +74,7 @@ export interface WebSocketEvents {
   'transaction-updated': (data: TransactionUpdate) => void;
   'transaction-status-updated': (data: TransactionUpdate) => void;
   'recent-transactions': (data: RecentTransactions) => void;
+  'tokens-changed': (data: TokenChange) => void;
   'price-updated': (data: PriceUpdate) => void;
   'wallet-error': (data: { error: string }) => void;
   'transaction-error': (data: { error: string }) => void;
