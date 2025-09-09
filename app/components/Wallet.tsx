@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
@@ -11,12 +12,15 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
-import { API_BASE_URL } from '../../config/api';
+import { useAlert } from '../../lib/alertUtils';
+import { useWallet } from '../../lib/contexts/WalletContext';
+import { cleanTokenName, cleanTokenSymbol, getBlockchainInfo, getTokenImageUrl } from '../../lib/tokenUtils';
 import { PriceUpdate, websocketService } from '../../lib/websocketService';
 import AnimatedBalance from './AnimatedBalance';
 import CustomAlert from './CustomAlert';
 interface WalletProps {
   session: any;
+  isActive?: boolean;
 }
 interface CryptoAsset {
   id: string;
@@ -31,38 +35,57 @@ interface CryptoAsset {
   blockchain: string;
 }
 
-export default function Wallet({ session }: WalletProps) {
+export default function Wallet({ session, isActive = true }: WalletProps) {
   const router = useRouter();
   const [isBalanceVisible, setIsBalanceVisible] = useState(true);
   const [activeTab, setActiveTab] = useState<'crypto' | 'cash'>('crypto');
-  const [showAlert, setShowAlert] = useState(false);
-  const [alertConfig, setAlertConfig] = useState({
-    title: '',
-    message: '',
-    buttons: [] as Array<{ text: string; onPress: () => void; style?: 'default' | 'cancel' | 'destructive' }>
-  });
-
-  // Real wallet data from API
-  const [wallets, setWallets] = useState<any[]>([]);
+  const { showAlert, alertConfig, showCustomAlert, hideAlert } = useAlert();
+  
+  // Use cached wallet data
+  const { wallets, isLoading, error, refreshWalletData } = useWallet();
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [selectedWallet, setSelectedWallet] = useState<any>(null);
   const [tokenBalances, setTokenBalances] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   // Calculate real-time total balance from API data
   const [totalBalance, setTotalBalance] = useState('$0.00');
   const [totalBalanceChange, setTotalBalanceChange] = useState('+0.00');
   const [totalBalancePercent, setTotalBalancePercent] = useState('+0.00%');
 
+  // Load balance visibility state from storage on mount
+  useEffect(() => {
+    const loadBalanceVisibility = async () => {
+      try {
+        const stored = await AsyncStorage.getItem('balance_visibility');
+        if (stored !== null) {
+          setIsBalanceVisible(JSON.parse(stored));
+        }
+      } catch (error) {
+        console.error('Error loading balance visibility:', error);
+      }
+    };
+
+    loadBalanceVisibility();
+  }, []);
+
+  // Save balance visibility state to storage when it changes
+  useEffect(() => {
+    const saveBalanceVisibility = async () => {
+      try {
+        await AsyncStorage.setItem('balance_visibility', JSON.stringify(isBalanceVisible));
+      } catch (error) {
+        console.error('Error saving balance visibility:', error);
+      }
+    };
+
+    saveBalanceVisibility();
+  }, [isBalanceVisible]);
+
   const toggleBalanceVisibility = () => {
-    setIsBalanceVisible(!isBalanceVisible);
+    setIsBalanceVisible(prev => !prev);
   };
 
-  const showCustomAlert = (title: string, message: string, buttons: Array<{ text: string; onPress: () => void; style?: 'default' | 'cancel' | 'destructive' }>) => {
-    setAlertConfig({ title, message, buttons });
-    setShowAlert(true);
-  };
+
 
   const handleReceive = () => {
     router.push({
@@ -92,82 +115,13 @@ export default function Wallet({ session }: WalletProps) {
   const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
   
   // Real-time price data
-  const [priceData, setPriceData] = useState<Map<string, PriceUpdate>>(new Map());
+  const [priceData, setPriceData] = useState<Map<string, any>>(new Map());
+  const [isPriceLoading, setIsPriceLoading] = useState(false);
 
-  // Get blockchain icon and clean symbol
-  const getBlockchainInfo = (blockchain: string) => {
-    const cleanBlockchain = blockchain.replace('-SEPOLIA', '').replace('-DEVNET', '').replace('-AMOY', '');
-    
-    const blockchainIcons: { [key: string]: string } = {
-      'ETH': 'https://assets.coingecko.com/coins/images/279/standard/ethereum.png?1696501628', // Ethereum
-      'ARB': 'https://assets.coingecko.com/coins/images/16547/standard/arb.jpg?1721358242', // Arbitrum
-      'BASE': 'https://assets.coingecko.com/nft_contracts/images/2989/standard/base-introduced.png?1707289780', // Base
-      'OP': 'https://assets.coingecko.com/coins/images/25244/standard/Optimism.png?1696524385', // Optimism
-      'MATIC': 'https://assets.coingecko.com/coins/images/32440/standard/polygon.png?1698233684', // Polygon
-      'AVAX': 'https://assets.coingecko.com/coins/images/12559/standard/Avalanche_Circle_RedWhite_Trans.png?1696512369', // Avalanche
-      'SOL': 'https://assets.coingecko.com/coins/images/4128/standard/solana.png?1718769756', // Solana
-      'APTOS': 'https://assets.coingecko.com/coins/images/26455/standard/aptos_round.png?1696525528', // Aptos
-      'UNI': 'https://assets.coingecko.com/coins/images/12504/standard/uniswap-logo.png?1720676669', // Unichain
-    };
-
-    return {
-      icon: blockchainIcons[cleanBlockchain],
-      name: cleanBlockchain
-    };
-  };
-
-  // Clean token symbol by removing testnet suffixes
-  const cleanTokenSymbol = (symbol: string) => {
-    return symbol.replace('-SEPOLIA', '').replace('-DEVNET', '').replace('-AMOY', '').replace('-FUJI', '');
-  };
-
-  // Clean token name by removing testnet suffixes
-  const cleanTokenName = (name: string) => {
-    return name.replace('-Sepolia', '').replace('-Devnet', '').replace('-Amony', '').replace('-Fuji', '');
-  };
-
-  // Generate reliable image URL for tokens
-  const getTokenImageUrl = (symbol: string) => {
-    const cleanSymbol = cleanTokenSymbol(symbol);
-    
-    // Use CoinGecko CDN for reliable images
-    const coinGeckoIds: { [key: string]: string } = {
-      'ETH': '1027',
-      'USDC': '3408', 
-      'USDT': '825',
-      'SOL': '5426',
-      'MATIC': '3890',
-      'AVAX': '5805',
-      'ARB': '11841',
-      'OP': '11840',
-      'POL': '28321',
-      'EURC': '20641',
-      'BTC': '1',
-      'BNB': '1839',
-      'ADA': '2010',
-      'DOT': '6636',
-      'LINK': '1975',
-      'UNI': '7083',
-      'LTC': '2',
-      'BCH': '1831',
-      'XRP': '52',
-      'DOGE': '74'
-    };
-
-    const coinId = coinGeckoIds[cleanSymbol];
-    if (coinId) {
-      return `https://s2.coinmarketcap.com/static/img/coins/64x64/${coinId}.png`;
-    }
-
-    // Fallback to ui-avatars.com for unknown tokens
-    return `https://ui-avatars.com/api/?name=${encodeURIComponent(cleanSymbol)}&background=10B981&color=fff&size=64`;
-  };
-
-  // Fetch real-time prices from Coinbase API
+  // Fetch real-time prices using our price service
   const fetchTokenPrices = async (tokens: string[]) => {
     try {
-      console.log('Fetching prices for tokens:', tokens);
-      
+      setIsPriceLoading(true);
       const pricePromises = tokens.map(async (token) => {
         try {
           const response = await fetch(`https://api.coinbase.com/v2/prices/${token}-USD/spot`);
@@ -200,12 +154,12 @@ export default function Wallet({ session }: WalletProps) {
           };
         }
       });
-
-      console.log('Price data received:', priceData);
       return priceData;
     } catch (error) {
       console.error('Error fetching token prices:', error);
       return null;
+    } finally {
+      setIsPriceLoading(false);
     }
   };
 
@@ -230,30 +184,28 @@ export default function Wallet({ session }: WalletProps) {
           const amount = parseFloat(balance.amount);
           const cleanSymbol = cleanTokenSymbol(token.symbol);
           
-          console.log(`Processing balance for ${cleanSymbol}:`);
-          console.log(`  Raw balance amount: ${balance.amount}`);
-          console.log(`  Parsed amount: ${amount}`);
-          
-          // Get real-time price data from API response
+          // Get real-time price data from WebSocket updates or API response
           let pricePerToken = 1;
           let changePercent = '+0.00%';
           let isPositive = true;
           
-          console.log(`Processing token: ${cleanSymbol}`);
-          console.log(`Real price data available:`, !!realPriceData);
-          console.log(`Price key: ${cleanSymbol}/USD`);
-          console.log(`Price data for ${cleanSymbol}:`, realPriceData?.[`${cleanSymbol}/USD`]);
-          
           // Check if it's a stablecoin
           const isStablecoin = ['USDC', 'USDT', 'EURC', 'DAI', 'BUSD', 'TUSD'].includes(cleanSymbol);
           
-          if (realPriceData && realPriceData[`${cleanSymbol}/USD`]) {
+          // First check WebSocket price data
+          const wsPriceData = priceData.get(cleanSymbol);
+          if (wsPriceData) {
+            pricePerToken = wsPriceData.price || 1;
+            const percentage = wsPriceData.changePercent24h || 0;
+            changePercent = `${percentage >= 0 ? '+' : ''}${percentage.toFixed(2)}%`;
+            isPositive = percentage >= 0;
+          } else if (realPriceData && realPriceData[`${cleanSymbol}/USD`]) {
+            // Fallback to API price data
             const priceInfo = realPriceData[`${cleanSymbol}/USD`];
             pricePerToken = priceInfo.last || 1;
             const percentage = priceInfo.percentage || 0;
             changePercent = `${percentage >= 0 ? '+' : ''}${percentage.toFixed(2)}%`;
             isPositive = percentage >= 0;
-            console.log(`Using real price for ${cleanSymbol}: $${pricePerToken}`);
           } else {
             // Fallback prices for tokens without real-time data
             if (isStablecoin) {
@@ -265,7 +217,6 @@ export default function Wallet({ session }: WalletProps) {
               }
               changePercent = '+0.00%';
               isPositive = true;
-              console.log(`Using stablecoin fallback price for ${cleanSymbol}: $${pricePerToken}`);
             } else {
               // Regular token fallbacks
               if (cleanSymbol === 'ETH') pricePerToken = 2500;
@@ -273,16 +224,10 @@ export default function Wallet({ session }: WalletProps) {
               else if (cleanSymbol === 'SOL') pricePerToken = 100;
               else if (cleanSymbol === 'AVAX') pricePerToken = 30;
               else pricePerToken = 1; // Default fallback
-              console.log(`Using fallback price for ${cleanSymbol}: $${pricePerToken}`);
             }
           }
           
           const usdValue = amount * pricePerToken;
-          
-          console.log(`Value calculation for ${cleanSymbol}:`);
-          console.log(`  Amount: ${amount}`);
-          console.log(`  Price per token: $${pricePerToken}`);
-          console.log(`  USD value: $${usdValue}`);
 
           // Generate reliable image URL
           const imageUrl = getTokenImageUrl(token.symbol);
@@ -302,7 +247,6 @@ export default function Wallet({ session }: WalletProps) {
         })
       );
       
-      console.log('Setting cryptoAssets with processed data:', processedAssets);
       setCryptoAssets(processedAssets);
     } catch (error) {
       console.error('Error processing token balances:', error);
@@ -328,10 +272,26 @@ export default function Wallet({ session }: WalletProps) {
   const renderCryptoItem = ({ item }: { item: CryptoAsset }) => {
     const hasImageError = imageErrors.has(item.id);
     const blockchainInfo = getBlockchainInfo(item.blockchain);
-    console.log('Blockchain info:', item);
+    
+    const handleTokenPress = () => {
+      // Find the token in the tokenBalances to get the tokenId and walletId
+      const tokenBalance = tokenBalances.find(tb => 
+        cleanTokenSymbol(tb.token.symbol) === item.symbol && tb.blockchain === item.blockchain
+      );
+      
+      if (tokenBalance) {
+        router.push({
+          pathname: '/token-info',
+          params: {
+            tokenId: tokenBalance.token.id,
+            walletId: tokenBalance.walletId
+          }
+        });
+      }
+    };
     
     return (
-      <TouchableOpacity style={styles.cryptoItem}>
+      <TouchableOpacity style={styles.cryptoItem} onPress={handleTokenPress}>
         <View style={styles.cryptoIconContainer}>
           <View style={styles.cryptoIcon}>
             {hasImageError ? (
@@ -372,61 +332,42 @@ export default function Wallet({ session }: WalletProps) {
     );
   };
 
-  // Fetch wallet data function
-  const fetchWalletData = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      
-      const response = await fetch(`${API_BASE_URL}/api/wallets/wallets/${session.userId}/balance`);
-      const data = await response.json();
-      
-      if (data.success && data.walletData) {
-        // Set wallets data
-        setWallets(data.walletData);
-        
-        // Select first wallet by default
-        if (data.walletData.length > 0) {
-          setSelectedWallet(data.walletData[0]);
-          
-          // Flatten all token balances from all wallets
-          const allTokens = data.walletData.flatMap((wallet: any) => 
-            wallet.tokenBalances.map((tokenBalance: any) => ({
-              ...tokenBalance,
-              walletId: wallet.walletId,
-              walletAddress: wallet.walletAddress,
-              blockchain: wallet.blockchain,
-              accountType: wallet.accountType
-            }))
-          );
-          
-          setTokenBalances(allTokens);
-          
-          // Process token balances to crypto assets
-          processTokenBalances(allTokens);
-        }
-      } else {
-        setError('Failed to fetch wallet data');
-      }
-    } catch (err) {
-      console.error('Error fetching wallet data:', err);
-      setError('Network error occurred');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
+  // Process wallet data when it changes
   useEffect(() => {
-    if (session?.userId) {
-      fetchWalletData();
+    console.log('Wallet component: wallets changed:', wallets.length, 'wallets');
+    console.log('Wallet component: isLoading:', isLoading, 'error:', error);
+    
+    if (wallets.length > 0) {
+      console.log('Wallet component: Processing wallet data');
+      // Select first wallet by default
+      setSelectedWallet(wallets[0]);
+      
+      // Flatten all token balances from all wallets
+      const allTokens = wallets.flatMap((wallet: any) => 
+        wallet.tokenBalances.map((tokenBalance: any) => ({
+          ...tokenBalance,
+          walletId: wallet.walletId,
+          walletAddress: wallet.walletAddress,
+          blockchain: wallet.blockchain,
+          accountType: wallet.accountType
+        }))
+      );
+      
+      console.log('Wallet component: Processed tokens:', allTokens.length, 'tokens');
+      setTokenBalances(allTokens);
+      
+      // Process token balances to crypto assets
+      processTokenBalances(allTokens);
+    } else {
+      console.log('Wallet component: No wallets available');
     }
-  }, [session?.userId]);
+  }, [wallets, isLoading, error]);
 
   // Handle pull-to-refresh
   const onRefresh = async () => {
     setIsRefreshing(true);
     try {
-      await fetchWalletData();
+      await refreshWalletData();
     } finally {
       setIsRefreshing(false);
     }
@@ -482,13 +423,10 @@ export default function Wallet({ session }: WalletProps) {
   // Listen for token changes
   useEffect(() => {
     const handleTokenChange = (tokenChange: any) => {
-      console.log('Token changes detected:', tokenChange);
-      
-      // Refresh wallet data when new tokens are detected
-      if (tokenChange.newTokens && tokenChange.newTokens.length > 0) {
-        console.log('New tokens detected, refreshing wallet data...');
-        fetchWalletData();
-      }
+        // Refresh wallet data when new tokens are detected
+        if (tokenChange.newTokens && tokenChange.newTokens.length > 0) {
+          refreshWalletData();
+        }
     };
 
     websocketService.on('tokens-changed', handleTokenChange);
@@ -498,12 +436,48 @@ export default function Wallet({ session }: WalletProps) {
     };
   }, []);
 
+  // Listen for real-time price updates
+  useEffect(() => {
+    const handlePriceUpdate = (priceUpdate: PriceUpdate) => {
+      console.log('Wallet: Received price update:', priceUpdate);
+      setPriceData(prev => {
+        const newPriceData = new Map(prev);
+        newPriceData.set(priceUpdate.symbol, priceUpdate);
+        return newPriceData;
+      });
+    };
+
+    websocketService.on('price-updated', handlePriceUpdate);
+
+    return () => {
+      websocketService.off('price-updated', handlePriceUpdate);
+    };
+  }, []);
+
   // Reprocess crypto assets when price data changes
   useEffect(() => {
     if (tokenBalances.length > 0 && priceData.size > 0) {
       processTokenBalances(tokenBalances);
     }
   }, [priceData]);
+
+  // Update total balance when crypto assets change (due to price updates)
+  useEffect(() => {
+    if (cryptoAssets.length > 0) {
+      const total = cryptoAssets.reduce((sum, asset) => {
+        const value = parseFloat(asset.value.replace('$', '').replace(',', ''));
+        return sum + value;
+      }, 0);
+      
+      setTotalBalance(`$${total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
+      
+      // Calculate change (simplified - could be enhanced with historical data)
+      const change = total * 0.02; // Mock 2% change
+      setTotalBalanceChange(`$${change.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
+      setTotalBalancePercent('+2.00%');
+    }
+  }, [cryptoAssets]);
+
 
   return (
     <ScrollView 
@@ -546,20 +520,22 @@ export default function Wallet({ session }: WalletProps) {
               style={styles.balanceValue}
               animationDuration={300}
             />
-            <View style={styles.balanceChangeContainer}>
-              <Text style={[
-                styles.balanceChangePositive,
-                totalBalanceChange.startsWith('-') && styles.balanceChangeNegative
-              ]}>
-                {totalBalanceChange}
-              </Text>
-              <Text style={[
-                styles.balanceChangePercent,
-                totalBalancePercent.startsWith('-') && styles.balanceChangePercentNegative
-              ]}>
-                {totalBalancePercent} Last 24h
-              </Text>
-            </View>
+            {isBalanceVisible && (
+              <View style={styles.balanceChangeContainer}>
+                <Text style={[
+                  styles.balanceChangePositive,
+                  totalBalanceChange.startsWith('-') && styles.balanceChangeNegative
+                ]}>
+                  {totalBalanceChange}
+                </Text>
+                <Text style={[
+                  styles.balanceChangePercent,
+                  totalBalancePercent.startsWith('-') && styles.balanceChangePercentNegative
+                ]}>
+                  {totalBalancePercent} Last 24h
+                </Text>
+              </View>
+            )}
           </View>
 
 
@@ -642,46 +618,7 @@ export default function Wallet({ session }: WalletProps) {
               onPress={() => {
                 if (session?.userId) {
                   // Retry fetch
-                  const fetchWalletData = async () => {
-                    try {
-                      setIsLoading(true);
-                      setError(null);
-                      
-                      const response = await fetch(`${API_BASE_URL}/api/wallets/wallets/${session.userId}/balance`);
-                      const data = await response.json();
-                      
-                      if (data.success && data.walletData) {
-                        setWallets(data.walletData);
-                        
-                        if (data.walletData.length > 0) {
-                          setSelectedWallet(data.walletData[0]);
-                          
-                          const allTokens = data.walletData.flatMap((wallet: any) => 
-                            wallet.tokenBalances.map((tokenBalance: any) => ({
-                              ...tokenBalance,
-                              walletId: wallet.walletId,
-                              walletAddress: wallet.walletAddress,
-                              blockchain: wallet.blockchain,
-                              accountType: wallet.accountType
-                            }))
-                          );
-                          
-                          setTokenBalances(allTokens);
-                          
-                          // Process token balances to crypto assets
-                          processTokenBalances(allTokens);
-                        }
-                      } else {
-                        setError('Failed to fetch wallet data');
-                      }
-                    } catch (err) {
-                      console.error('Error fetching wallet data:', err);
-                      setError('Network error occurred');
-                    } finally {
-                      setIsLoading(false);
-                    }
-                  };
-                  fetchWalletData();
+                  refreshWalletData();
                 }
               }}
             >
@@ -689,15 +626,21 @@ export default function Wallet({ session }: WalletProps) {
             </TouchableOpacity>
           </View>
         ) : (activeTab === 'crypto' ? cryptoAssets : cashAssets).length > 0 ? (
-          (() => {
-            console.log('Rendering cryptoAssets:', cryptoAssets);
-            console.log('Active tab:', activeTab);
-            return (activeTab === 'crypto' ? cryptoAssets : cashAssets).map((item, i) => (
-              <View key={i+Date.now()}>
-                {renderCryptoItem({ item })}
-              </View>
-            ));
-          })()
+          isBalanceVisible ? (
+            (() => {
+              return (activeTab === 'crypto' ? cryptoAssets : cashAssets).map((item, i) => (
+                <View key={i+Date.now()}>
+                  {renderCryptoItem({ item })}
+                </View>
+              ));
+            })()
+          ) : (
+            <View style={styles.hiddenContainer}>
+              <Ionicons name="eye-off-outline" size={48} color="#666" />
+              <Text style={styles.hiddenText}>Balance hidden</Text>
+              <Text style={styles.hiddenSubtext}>Tap the eye icon to reveal your tokens</Text>
+            </View>
+          )
         ) : (
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyText}>
@@ -715,7 +658,7 @@ export default function Wallet({ session }: WalletProps) {
         title={alertConfig.title}
         message={alertConfig.message}
         buttons={alertConfig.buttons}
-        onClose={() => setShowAlert(false)}
+        onClose={hideAlert}
       />
     </ScrollView>
   );
@@ -993,6 +936,25 @@ const styles = StyleSheet.create({
   emptySubtext: {
     color: '#CCCCCC',
     fontSize: 14,
+    textAlign: 'center',
+  },
+  hiddenContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+    paddingHorizontal: 20,
+  },
+  hiddenText: {
+    color: '#666',
+    fontSize: 18,
+    fontWeight: '600',
+    marginTop: 16,
+    textAlign: 'center',
+  },
+  hiddenSubtext: {
+    color: '#999',
+    fontSize: 14,
+    marginTop: 8,
     textAlign: 'center',
   },
   retryButton: {

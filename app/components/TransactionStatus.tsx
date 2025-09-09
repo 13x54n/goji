@@ -1,6 +1,6 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import React from 'react';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export interface TransactionStatusProps {
   transactionId: string;
@@ -9,6 +9,8 @@ export interface TransactionStatusProps {
   tokenSymbol: string;
   destinationAddress: string;
   note?: string;
+  price?: number;
+  priceChange?: number;
   onCancel?: () => void;
   onAccelerate?: () => void;
   onViewDetails?: () => void;
@@ -90,6 +92,8 @@ export default function TransactionStatus({
   tokenSymbol,
   destinationAddress,
   note,
+  price,
+  priceChange,
   onCancel,
   onAccelerate,
   onViewDetails
@@ -123,8 +127,30 @@ export default function TransactionStatus({
       <View style={styles.details}>
         <View style={styles.detailRow}>
           <Text style={styles.detailLabel}>Amount:</Text>
-          <Text style={styles.detailValue}>{amount} {tokenSymbol}</Text>
+          <View style={styles.amountContainer}>
+            <Text style={styles.detailValue}>{amount} {tokenSymbol}</Text>
+            {price && (
+              <Text style={styles.priceText}>
+                ${(parseFloat(amount) * price).toFixed(2)}
+              </Text>
+            )}
+          </View>
         </View>
+        
+        {price && priceChange !== undefined && (
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>Price:</Text>
+            <View style={styles.priceContainer}>
+              <Text style={styles.detailValue}>${price.toFixed(2)}</Text>
+              <Text style={[
+                styles.priceChange,
+                priceChange >= 0 ? styles.positiveChange : styles.negativeChange
+              ]}>
+                {priceChange >= 0 ? '+' : ''}{priceChange.toFixed(2)}%
+              </Text>
+            </View>
+          </View>
+        )}
         
         <View style={styles.detailRow}>
           <Text style={styles.detailLabel}>To:</Text>
@@ -225,6 +251,30 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     flex: 2,
     textAlign: 'right',
+  },
+  amountContainer: {
+    flex: 2,
+    alignItems: 'flex-end',
+  },
+  priceText: {
+    fontSize: 12,
+    color: '#CCCCCC',
+    marginTop: 2,
+  },
+  priceContainer: {
+    flex: 2,
+    alignItems: 'flex-end',
+  },
+  priceChange: {
+    fontSize: 12,
+    fontWeight: '500',
+    marginTop: 2,
+  },
+  positiveChange: {
+    color: '#10B981',
+  },
+  negativeChange: {
+    color: '#EF4444',
   },
   actions: {
     flexDirection: 'row',

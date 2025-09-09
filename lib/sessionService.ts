@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AppState, AppStateStatus } from 'react-native';
+import { sessionEventService } from './services/sessionEventService';
 
 interface UserSession {
   userId: string;
@@ -123,6 +124,9 @@ class SessionService {
     
     await this.saveSession(session);
     this.resetInactivityTimer();
+    
+    // Emit session change event
+    sessionEventService.emit();
   }
 
   // Get current session
@@ -161,6 +165,9 @@ class SessionService {
         clearTimeout(this.inactivityTimer as any);
         this.inactivityTimer = null;
       }
+      
+      // Emit session change event
+      sessionEventService.emit();
     } catch (error) {
       // no-op
     }

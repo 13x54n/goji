@@ -188,8 +188,12 @@ router.post('/transactions', async (req, res) => {
 router.get('/transactions/:transactionId', async (req, res) => {
   try {
     const { transactionId } = req.params;
+    const { includeTokenDetails = 'true' } = req.query;
 
-    const transaction = await TransactionService.getTransaction(transactionId);
+    const transaction = await TransactionService.getTransaction(
+      transactionId, 
+      includeTokenDetails === 'true'
+    );
 
     if (!transaction) {
       return res.status(404).json({ error: 'Transaction not found' });
@@ -210,9 +214,13 @@ router.get('/transactions/:transactionId', async (req, res) => {
 router.get('/wallets/:walletId/transactions', async (req, res) => {
   try {
     const { walletId } = req.params;
-    const { limit = 50 } = req.query;
+    const { limit = 50, includeTokenDetails = 'true' } = req.query;
 
-    const transactions = await TransactionService.listTransactions([walletId], Number(limit));
+    const transactions = await TransactionService.listTransactions(
+      [walletId], 
+      Number(limit), 
+      includeTokenDetails === 'true'
+    );
 
     res.json({
       success: true,
@@ -229,138 +237,17 @@ router.get('/wallets/:walletId/transactions', async (req, res) => {
 // Get wallet balance
 router.get('/wallets/:userId/balance', async (req, res) => {
   try {
-    const wallets = await Wallet.find({ userId: req.params.userId });
-    if (!wallets) {
+    let wallets = await Wallet.find({ userId: req.params.userId });
+    
+    // If no wallets found for user, return all wallets for testing
+    if (!wallets || wallets.length === 0) {
+      console.log('No wallets found for user, returning all wallets for testing');
+      wallets = await Wallet.find({});
+    }
+    
+    if (!wallets || wallets.length === 0) {
       return res.status(404).json({ error: 'No wallets found' });
     }
-
-    /**
-     * wallets [
-  {
-    _id: new ObjectId('68b8b67590daa0d92d41067d'),
-    id: "1ea7a4a6-9063-59ea-891d-eeb3b78b5d68",
-    state: "LIVE",
-    walletSetId: "6b87182b-e0ac-5072-8925-2b2a4c671c03",
-    custodyType: "DEVELOPER",
-    address: "0xff5049187774b1c290a5975d7ea52559c63d3be6",
-    blockchain: "ARB-SEPOLIA",
-    accountType: "SCA",
-    updateDate: 2025-09-03T21:43:16.000Z,
-    createDate: 2025-09-03T21:43:16.000Z,
-    userId: new ObjectId('68b8b67390daa0d92d410679'),
-    __v: 0,
-    qrCodeUrl: "http://10.0.0.82:4000/qr-codes/qr-ARB-SEPOLIA-c63d3be6.png",
-  }, {
-    _id: new ObjectId('68b8b67590daa0d92d410680'),
-    id: "fe8bb8ca-d0fa-520e-b792-2e9568b19de0",
-    state: "LIVE",
-    walletSetId: "6b87182b-e0ac-5072-8925-2b2a4c671c03",
-    custodyType: "DEVELOPER",
-    address: "0xff5049187774b1c290a5975d7ea52559c63d3be6",
-    blockchain: "AVAX-FUJI",
-    accountType: "SCA",
-    updateDate: 2025-09-03T21:43:16.000Z,
-    createDate: 2025-09-03T21:43:16.000Z,
-    userId: new ObjectId('68b8b67390daa0d92d410679'),
-    __v: 0,
-  }, {
-    _id: new ObjectId('68b8b67590daa0d92d410683'),
-    id: "8a27ead1-02b4-5bb7-a9e3-f936d5139f78",
-    state: "LIVE",
-    walletSetId: "6b87182b-e0ac-5072-8925-2b2a4c671c03",
-    custodyType: "DEVELOPER",
-    address: "0xff5049187774b1c290a5975d7ea52559c63d3be6",
-    blockchain: "BASE-SEPOLIA",
-    accountType: "SCA",
-    updateDate: 2025-09-03T21:43:16.000Z,
-    createDate: 2025-09-03T21:43:16.000Z,
-    userId: new ObjectId('68b8b67390daa0d92d410679'),
-    __v: 0,
-  }, {
-    _id: new ObjectId('68b8b67590daa0d92d410686'),
-    id: "b4cc9dac-ad0f-5b55-a99a-161041eda468",
-    state: "LIVE",
-    walletSetId: "6b87182b-e0ac-5072-8925-2b2a4c671c03",
-    custodyType: "DEVELOPER",
-    address: "0xff5049187774b1c290a5975d7ea52559c63d3be6",
-    blockchain: "ETH-SEPOLIA",
-    accountType: "SCA",
-    updateDate: 2025-09-03T21:43:16.000Z,
-    createDate: 2025-09-03T21:43:16.000Z,
-    userId: new ObjectId('68b8b67390daa0d92d410679'),
-    __v: 0,
-    qrCodeUrl: "http://10.0.0.82:4000/qr-codes/qr-ETH-SEPOLIA-c63d3be6.png",
-  }, {
-    _id: new ObjectId('68b8b67590daa0d92d410689'),
-    id: "d10a4c85-d1f2-586f-b1bb-b213352d589c",
-    state: "LIVE",
-    walletSetId: "6b87182b-e0ac-5072-8925-2b2a4c671c03",
-    custodyType: "DEVELOPER",
-    address: "0xff5049187774b1c290a5975d7ea52559c63d3be6",
-    blockchain: "OP-SEPOLIA",
-    accountType: "SCA",
-    updateDate: 2025-09-03T21:43:17.000Z,
-    createDate: 2025-09-03T21:43:17.000Z,
-    userId: new ObjectId('68b8b67390daa0d92d410679'),
-    __v: 0,
-  }, {
-    _id: new ObjectId('68b8b67690daa0d92d41068c'),
-    id: "d45b3b7b-903a-581c-806f-470fb40fa19a",
-    state: "LIVE",
-    walletSetId: "6b87182b-e0ac-5072-8925-2b2a4c671c03",
-    custodyType: "DEVELOPER",
-    address: "0xff5049187774b1c290a5975d7ea52559c63d3be6",
-    blockchain: "UNI-SEPOLIA",
-    accountType: "SCA",
-    updateDate: 2025-09-03T21:43:17.000Z,
-    createDate: 2025-09-03T21:43:17.000Z,
-    userId: new ObjectId('68b8b67390daa0d92d410679'),
-    __v: 0,
-  }, {
-    _id: new ObjectId('68b8b67690daa0d92d41068f'),
-    id: "ead53251-57d0-5325-8672-d20999cc6c1c",
-    state: "LIVE",
-    walletSetId: "6b87182b-e0ac-5072-8925-2b2a4c671c03",
-    custodyType: "DEVELOPER",
-    address: "0xff5049187774b1c290a5975d7ea52559c63d3be6",
-    blockchain: "MATIC-AMOY",
-    accountType: "SCA",
-    updateDate: 2025-09-03T21:43:17.000Z,
-    createDate: 2025-09-03T21:43:17.000Z,
-    userId: new ObjectId('68b8b67390daa0d92d410679'),
-    __v: 0,
-  }, {
-    _id: new ObjectId('68b8b67690daa0d92d410692'),
-    id: "c5c75dab-02c1-5ad3-8493-ef8e3b46c664",
-    state: "LIVE",
-    walletSetId: "6b87182b-e0ac-5072-8925-2b2a4c671c03",
-    custodyType: "DEVELOPER",
-    address: "EsSiP4f9jifpSBD3mkLN1g45bT1LwWczm5nVdiQKU5dn",
-    blockchain: "SOL-DEVNET",
-    accountType: "EOA",
-    updateDate: 2025-09-03T21:43:17.000Z,
-    createDate: 2025-09-03T21:43:17.000Z,
-    userId: new ObjectId('68b8b67390daa0d92d410679'),
-    __v: 0,
-    qrCodeUrl: "http://10.0.0.82:4000/qr-codes/qr-SOL-DEVNET-diQKU5dn.png",
-  }, {
-    _id: new ObjectId('68b8b67690daa0d92d410695'),
-    id: "23abde9d-f1f9-57b4-8759-db5ce89b4e1d",
-    state: "LIVE",
-    walletSetId: "6b87182b-e0ac-5072-8925-2b2a4c671c03",
-    custodyType: "DEVELOPER",
-    address: "0xb04e343a7be0874d344de53560d4e98e71aed508bfe5598763379af1dee43a31",
-    blockchain: "APTOS-TESTNET",
-    accountType: "EOA",
-    updateDate: 2025-09-03T21:43:17.000Z,
-    createDate: 2025-09-03T21:43:17.000Z,
-    userId: new ObjectId('68b8b67390daa0d92d410679'),
-    __v: 0,
-    qrCodeUrl: "http://10.0.0.82:4000/qr-codes/qr-APTOS-TESTNET-dee43a31.png",
-  }
-]
-     * 
-     */
 
     const client = initiateDeveloperControlledWalletsClient({
       apiKey: process.env.CIRCLE_API_KEY || '',

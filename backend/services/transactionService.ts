@@ -1,5 +1,5 @@
-import { client } from '../utils/circleWalletClient';
 import { v4 as uuidv4 } from 'uuid';
+import { client } from '../utils/circleWalletClient';
 
 export interface TransactionRequest {
   walletId: string;
@@ -27,6 +27,17 @@ export interface TransactionResponse {
   };
   createdAt: string;
   updatedAt: string;
+  tokenDetails?: {
+    id: string;
+    name: string;
+    symbol: string;
+    decimals: number;
+    standard: string;
+    isNative: boolean;
+    contractAddress?: string;
+    imageUrl?: string;
+    blockchain?: string;
+  } | null;
 }
 
 export interface WalletBalance {
@@ -46,6 +57,56 @@ export interface FeeEstimate {
 }
 
 export class TransactionService {
+  /**
+   * Get token details by ID
+   */
+  static async getTokenDetails(tokenId: string): Promise<any> {
+    try {
+      const response = await client.getToken({
+        id: tokenId
+      });
+      
+      return response.data?.token || null;
+    } catch (error) {
+      console.error('Error fetching token details:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Enrich transactions with token details
+   */
+  static async enrichTransactionsWithTokenDetails(transactions: TransactionResponse[]): Promise<TransactionResponse[]> {
+    try {
+      // Get unique token IDs from transactions
+      const tokenIds = [...new Set(transactions.map(tx => tx.tokenId).filter(Boolean))];
+      
+      // Fetch token details for all unique tokens
+      const tokenDetailsPromises = tokenIds.map(async (tokenId) => {
+        const tokenDetails = await this.getTokenDetails(tokenId);
+        return { tokenId, tokenDetails };
+      });
+      
+      const tokenDetailsMap = new Map();
+      const tokenDetailsResults = await Promise.all(tokenDetailsPromises);
+      
+      tokenDetailsResults.forEach(({ tokenId, tokenDetails }) => {
+        if (tokenDetails) {
+          tokenDetailsMap.set(tokenId, tokenDetails);
+        }
+      });
+      
+      // Enrich transactions with token details
+      return transactions.map(transaction => ({
+        ...transaction,
+        tokenDetails: tokenDetailsMap.get(transaction.tokenId) || null
+      }));
+    } catch (error) {
+      console.error('Error enriching transactions with token details:', error);
+      return transactions; // Return original transactions if enrichment fails
+    }
+  }
+
   /**
    * Create a new transaction
    */
@@ -147,7 +208,7 @@ export class TransactionService {
   /**
    * Get transaction by ID
    */
-  static async getTransaction(transactionId: string): Promise<TransactionResponse | null> {
+  static async getTransaction(transactionId: string, includeTokenDetails: boolean = true): Promise<TransactionResponse | null> {
     try {
       const response = await client.getTransaction({
         id: transactionId
@@ -156,7 +217,7 @@ export class TransactionService {
       const transaction = response.data?.transaction;
       if (!transaction) return null;
 
-      return {
+      const transactionData = {
         id: transaction.id || '',
         state: transaction.state || 'UNKNOWN',
         txHash: transaction.txHash,
@@ -169,6 +230,17 @@ export class TransactionService {
         createdAt: transaction.createdAt || new Date().toISOString(),
         updatedAt: transaction.updatedAt || new Date().toISOString()
       };
+
+      // Enrich with token details if requested
+      if (includeTokenDetails && transactionData.tokenId) {
+        const tokenDetails = await this.getTokenDetails(transactionData.tokenId);
+        return {
+          ...transactionData,
+          tokenDetails
+        };
+      }
+
+      return transactionData;
     } catch (error) {
       console.error('Error fetching transaction:', error);
       throw new Error(`Failed to fetch transaction: ${error}`);
@@ -178,14 +250,14 @@ export class TransactionService {
   /**
    * List transactions for a wallet
    */
-  static async listTransactions(walletIds: string[], limit: number = 50): Promise<TransactionResponse[]> {
+  static async listTransactions(walletIds: string[], limit: number = 50, includeTokenDetails: boolean = true): Promise<TransactionResponse[]> {
     try {
       const response = await client.listTransactions({
         walletIds,
         pageSize: limit
       });
 
-      return response.data?.transactions?.map((transaction: any) => ({
+      const transactions = response.data?.transactions?.map((transaction: any) => ({
         id: transaction.id || '',
         state: transaction.state || 'UNKNOWN',
         txHash: transaction.txHash,
@@ -198,6 +270,13 @@ export class TransactionService {
         createdAt: transaction.createdAt || new Date().toISOString(),
         updatedAt: transaction.updatedAt || new Date().toISOString()
       })) || [];
+
+      // Enrich with token details if requested
+      if (includeTokenDetails && transactions.length > 0) {
+        return await this.enrichTransactionsWithTokenDetails(transactions);
+      }
+
+      return transactions;
     } catch (error) {
       console.error('Error listing transactions:', error);
       throw new Error(`Failed to list transactions: ${error}`);

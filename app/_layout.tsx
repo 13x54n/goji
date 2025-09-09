@@ -1,6 +1,7 @@
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect } from "react";
+import { AppContextProvider } from '../lib/contexts/AppContext';
 import { sessionService } from '../lib/sessionService';
 
 export default function RootLayout() {
@@ -10,7 +11,7 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <>
+    <AppContextProvider>
       <StatusBar style="dark" />
       <Stack
         screenOptions={{
@@ -39,7 +40,9 @@ export default function RootLayout() {
         <Stack.Screen name="send-token" options={{ headerShown: false }} />
         <Stack.Screen name="send-review" options={{ headerShown: false }} />
         <Stack.Screen name="enter-amount" options={{ headerShown: false }} />
+        <Stack.Screen name="token-info" options={{ headerShown: false }} />
+        <Stack.Screen name="transaction-overview" options={{ headerShown: false }} />
       </Stack>
-    </>
+    </AppContextProvider>
   );
 }

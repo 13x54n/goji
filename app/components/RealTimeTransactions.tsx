@@ -1,46 +1,28 @@
 import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useTransactions } from '../../lib/contexts/TransactionContext';
+import { useTokenPrice } from '../../lib/hooks/useTokenPrice';
+import { getTokenSymbolFromId } from '../../lib/tokenUtils';
 import TransactionStatus from './TransactionStatus';
+// import { StatusBar } from 'expo-status-bar';
 
 export interface RealTimeTransactionsProps {
-  walletId?: string;
+  session?: any;
   showHeader?: boolean;
   maxTransactions?: number;
 }
 
 export default function RealTimeTransactions({
-  walletId,
+  session,
   showHeader = true,
   maxTransactions = 10
 }: RealTimeTransactionsProps) {
-  // Mock transaction data
-  const [transactions] = useState([
-    {
-      id: 'tx-1',
-      state: 'COMPLETED',
-      amount: '0.5',
-      destinationAddress: '0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8b6',
-      note: 'Payment for services',
-      timestamp: new Date().toISOString()
-    },
-    {
-      id: 'tx-2',
-      state: 'PENDING',
-      amount: '1.0',
-      destinationAddress: '0x1234567890123456789012345678901234567890',
-      note: 'Transfer to friend',
-      timestamp: new Date(Date.now() - 300000).toISOString()
-    }
-  ]);
-  const [transactionUpdate] = useState(false);
-  const [isTransactionLoading] = useState(false);
-  const [transactionError] = useState(null);
+  // Use cached transaction data
+  const { transactions, isLoading: isTransactionLoading, error: transactionError, refreshTransactions } = useTransactions();
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const refreshTransactions = async () => {
-    // Mock refresh function
-    console.log('Refreshing transactions...');
-  };
 
   const cancelTransaction = async (transactionId: string) => {
     // Mock cancel function
@@ -52,14 +34,12 @@ export default function RealTimeTransactions({
     console.log('Accelerating transaction:', transactionId);
   };
 
-  const [refreshing, setRefreshing] = useState(false);
-
   const handleRefresh = async () => {
-    setRefreshing(true);
+    setIsRefreshing(true);
     try {
       await refreshTransactions();
     } finally {
-      setRefreshing(false);
+      setIsRefreshing(false);
     }
   };
 
@@ -80,12 +60,50 @@ export default function RealTimeTransactions({
   };
 
   const handleViewTransactionDetails = (transactionId: string) => {
-    // TODO: Navigate to transaction details page
-    console.log('View transaction details:', transactionId);
+    // Find the transaction to get walletId
+    const transaction = transactions.find(tx => tx.id === transactionId);
+    if (transaction) {
+      router.push({
+        pathname: '/transaction-overview',
+        params: {
+          transactionId: transactionId,
+          walletId: transaction.walletId
+        }
+      });
+    }
+  };
+
+
+  // Format transaction data for display
+  const formatTransactionForDisplay = (transaction: any) => {
+    // Use enriched token details if available, otherwise fallback to token ID lookup
+    const tokenSymbol = transaction.tokenDetails?.symbol || 
+                       getTokenSymbolFromId(transaction.tokenId, transaction.blockchain);
+    
+    return {
+      id: transaction.id,
+      state: transaction.state,
+      amount: transaction.amount,
+      destinationAddress: transaction.destinationAddress,
+      note: `Transaction on ${transaction.blockchain}`,
+      timestamp: transaction.createdAt,
+      tokenSymbol,
+      tokenDetails: transaction.tokenDetails,
+      txHash: transaction.txHash,
+      fee: transaction.fee,
+      walletId: transaction.walletId,
+      blockchain: transaction.blockchain
+    };
   };
 
   // Filter and limit transactions
-  const displayTransactions = transactions.slice(0, maxTransactions);
+  const displayTransactions = transactions
+    .map(formatTransactionForDisplay)
+    .slice(0, maxTransactions);
+
+  // Debug logging
+  console.log('RealTimeTransactions: transactions:', transactions.length, 'isLoading:', isTransactionLoading, 'error:', transactionError);
+  console.log('RealTimeTransactions: displayTransactions:', displayTransactions.length);
 
   return (
     <View style={styles.container}>
@@ -114,7 +132,7 @@ export default function RealTimeTransactions({
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
-            refreshing={refreshing}
+            refreshing={isRefreshing}
             onRefresh={handleRefresh}
             tintColor="#0984e3"
             colors={['#0984e3']}
@@ -130,28 +148,35 @@ export default function RealTimeTransactions({
             </Text>
           </View>
         ) : (
-          displayTransactions.map((transaction) => (
-            <TransactionStatus
-              key={transaction.id}
-              transactionId={transaction.id}
-              status={transaction.state}
-              amount={transaction.amount}
-              tokenSymbol="ETH" // This should come from token data
-              destinationAddress={transaction.destinationAddress}
-              note={transaction.note}
-              onCancel={() => handleCancelTransaction(transaction.id)}
-              onAccelerate={() => handleAccelerateTransaction(transaction.id)}
-              onViewDetails={() => handleViewTransactionDetails(transaction.id)}
-            />
-          ))
+          displayTransactions.map((transaction) => {
+            // Get price data for this token
+            const { price } = useTokenPrice(transaction.tokenSymbol);
+            
+            return (
+              <TransactionStatus
+                key={transaction.id}
+                transactionId={transaction.id}
+                status={transaction.state}
+                amount={transaction.amount}
+                tokenSymbol={transaction.tokenSymbol}
+                destinationAddress={transaction.destinationAddress}
+                note={transaction.note}
+                price={price?.price}
+                priceChange={price?.changePercent24h}
+                onCancel={() => handleCancelTransaction(transaction.id)}
+                onAccelerate={() => handleAccelerateTransaction(transaction.id)}
+                onViewDetails={() => handleViewTransactionDetails(transaction.id)}
+              />
+            );
+          })
         )}
       </ScrollView>
 
       {/* Real-time update indicator */}
-      {transactionUpdate && (
+      {isTransactionLoading && (
         <View style={styles.updateIndicator}>
           <View style={styles.updateDot} />
-          <Text style={styles.updateText}>Live updates active</Text>
+          <Text style={styles.updateText}>Loading transactions...</Text>
         </View>
       )}
     </View>

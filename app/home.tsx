@@ -3,16 +3,16 @@ import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
 import {
-  BackHandler,
-  KeyboardAvoidingView,
-  Platform,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View
+    BackHandler,
+    KeyboardAvoidingView,
+    Platform,
+    SafeAreaView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from 'react-native';
-import { sessionService } from '../lib/sessionService';
+import { useSession } from '../lib/contexts/SessionContext';
 import AIChat from './components/AIChat';
 import MenuDrawer from './components/MenuDrawer';
 import Profile from './components/Profile';
@@ -35,7 +35,7 @@ const tabs: TabItem[] = [
 
 export default function HomeScreen() {
   const [activeTab, setActiveTab] = useState('wallet');
-  const [session, setSession] = useState<any>(null);
+  const { session, isLoggedIn } = useSession();
   const [isDrawerVisible, setIsDrawerVisible] = useState(false);
 
   useEffect(() => {
@@ -46,14 +46,11 @@ export default function HomeScreen() {
 
   useEffect(() => {
     // Check if user is logged in
-    if (!sessionService.isLoggedIn()) {
+    if (!isLoggedIn) {
       router.replace('/');
       return;
     }
-
-    const session = sessionService.getSession();
-    setSession(session);
-  }, []);
+  }, [isLoggedIn]);
 
   const handleLogout = () => {
     router.replace('/');
@@ -76,9 +73,9 @@ export default function HomeScreen() {
       case 'ai':
         return <AIChat />;
       case 'wallet':
-        return <Wallet session={session} />;
+        return <Wallet session={session} isActive={activeTab === 'wallet'} />;
       case 'transactions':
-        return <RealTimeTransactions walletId="demo-wallet-id" />;
+        return <RealTimeTransactions session={session} />;
       case 'profile':
         return <Profile session={session} onLogout={handleLogout} />;
       default:
