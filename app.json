@@ -1,0 +1,59 @@
+{
+  "expo": {
+    "name": "Goji",
+    "slug": "goji",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "goji",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0a0a0a"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.goji.crypto",
+      "buildNumber": "1",
+      "statusBarStyle": "light-content"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#0a0a0a",
+        "foregroundImage": "./assets/images/android-icon-foreground.png",
+        "backgroundImage": "./assets/images/android-icon-background.png",
+        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+      },
+      "package": "com.goji.crypto",
+      "versionCode": 1,
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false,
+      "statusBarStyle": "light-content",
+      "statusBarBackgroundColor": "#0a0a0a"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#0a0a0a"
+        }
+      ],
+      "expo-av"
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "your-eas-project-id"
+      }
+    }
+  }
+}
